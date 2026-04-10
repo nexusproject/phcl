@@ -1,4 +1,6 @@
-from .core.dsl import Declarative, Block
+from .core.declarative import Declarative
+from .core.expression import Expression, expr
+from .core.nodes import Block, Node
 
 # Sugar alias for readability
 B = Block

@@ -1,56 +1,20 @@
-from typing import Any, Dict, List, Type, Optional, Tuple
-from pprint import pprint as p
+from typing import Optional, Tuple
 import re
-from dataclasses import dataclass
 
-
-class Declarative:
-    """
-    Declarative DSL base.
-
-    Provides declarative composition via inheritance:
-    attributes defined on base classes are merged and overridden
-    by subclasses to form the final configuration body.
-
-    This class does not represent an HCL block itself —
-    it only defines *what* should be rendered, not *how*.
-    """
-
-    @property
-    def _phcl_attributes(self) -> Dict[str, Any]:
-        attrs: Dict[str, Any] = {}
-
-        for base in list(reversed(self.__class__.mro())) + [self]:
-            if base is Declarative:
-                continue
-
-            for name, value in base.__dict__.items():
-                if name.startswith("_"):
-                    continue
-
-                # skip methods, keep classes and properties
-                if callable(value) and not isinstance(value, (property, type)):
-                    continue
-
-                if isinstance(value, property):
-                    attrs[name] = getattr(self, name)
-                else:
-                    attrs[name] = value
-
-        return attrs
+from .declarative import Declarative
+from .registry import Registry
 
 
 def class_to_label(name: str) -> str:
     """
     Convert Python class name (PascalCase with acronyms)
-    to Terraform-style snake_case.
+    to HCL-friendly snake_case.
 
     Examples:
-        WebEC2        -> web_ec2
-        IAMRole      -> iam_role
-        ALBListener  -> alb_listener
+        HttpServer    -> http_server
+        XMLParser     -> xml_parser
+        UserProfile   -> user_profile
     """
-    # split before last capital in acronym sequences
     name = re.sub(r"([A-Z]+)([A-Z][a-z])", r"\1_\2", name)
     name = re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", name)
     return name.lower()
@@ -67,20 +31,21 @@ class Block(Declarative):
 
     This class is format-agnostic and does NOT perform final rendering.
     It only builds a structured, nested representation that can later be
-    rendered into Terraform JSON, HCL text, or any other backend.
+    rendered into HCL text, JSON-compatible forms, or any other backend.
 
     Examples (HCL):
-      backend "s3" { ... }
-      ingress { ... }
-      provisioner "file" { ... }
+      service "api" { ... }
+      policy { ... }
+      handler "json" { ... }
 
     Examples (PHCL):
-      backend = B["s3"](...)
-      ingress = B(...)
-      provisioner = B["file"](...)
+      service = B["api"](...)
+      policy = B(...)
+      handler = B["json"](...)
     """
-    _phcl_kind: str | None = None
-    _phcl_label: tuple[str, ...] | None = None
+
+    _phcl_kind: Optional[str] = None
+    _phcl_label: Optional[Tuple[str, ...]] = None
 
     @classmethod
     def __class_getitem__(cls, labels):
@@ -116,12 +81,11 @@ class Block(Declarative):
         body = {k: emit(k, v) for k, v in self._phcl_attributes.items()}
         node = {key: body} if key else body
 
-        # Apply block labels as outer nesting levels (HCL JSON semantics)
         for lbl in self._phcl_label or []:
             node = {lbl: node}
 
         return node
-    
+
     def _phcl_render(self, v):
         if isinstance(v, Block):
             return {
@@ -138,10 +102,43 @@ class Block(Declarative):
         return v
 
     def _phcl_spec(self) -> dict:
+        labels = ((class_to_label(self.__class__.__name__),) + self._phcl_label) if self._phcl_label else ()
         return {
             "kind": self._phcl_kind,
-            "labels": (class_to_label(self.__class__.__name__),) + self._phcl_label or (),
+            "labels": labels,
             "attrs": {k: self._phcl_render(v) for k, v in self._phcl_attributes.items()},
         }
 
 
+class Node(Block):
+    """
+    Base class for top-level renderable declarations.
+
+    `Node` extends `Block` with registry behavior so framework layers can
+    declare concrete classes and later emit them as a document.
+    """
+
+    _phcl_registry = Registry._phcl_registry
+
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+
+        if cls.__dict__.get("_phcl_abstract", False):
+            return
+
+        if cls is Node:
+            return
+
+        if Node in cls.__bases__:
+            return
+
+        for base in cls.__bases__:
+            if Node in base.__bases__:
+                return
+
+        Registry.add(cls)
+
+        print("NODE ", cls._phcl_label)
+
+    def _phcl_build(self) -> dict:
+        return super()._phcl_build(class_to_label(self.__class__.__name__))
