@@ -55,7 +55,6 @@ class Registry(type):
                 f"{name} cannot inherit multiple Resource/Data types"
             )
 
-        # setattr(self, "__phcl_label", name)
         Registry._registry.append(self)
 
     @classmethod
@@ -78,7 +77,7 @@ class Renderable:
             v = v() if isinstance(v, type) else v
             return v._phcl_render()
 
-        if isinstance(v, list):
+        if isinstance(v, list) or isinstance(v, tuple):
             return [self._phcl_render_value(x) for x in v]
 
         if isinstance(v, dict):
