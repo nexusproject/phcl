@@ -74,26 +74,3 @@ Then:
 ```bash
 phcl build test.py --ext .tf
 ```
-
-## Direction
-
-The intended long-term shape is:
-
-- `phcl` as a general HCL-oriented structural DSL
-- `phcl-terraform` as a Terraform-specific layer
-- potentially other product-specific layers later
-
-That split matters.
-The core should stay small and structural.
-Terraform-specific concepts like `resource`, `data`, `for_each`, `count`, addressing, and product rules belong in the layer above, not in the core itself.
-
-## Status
-
-PHCL is still early, but the direction is already clear:
-
-- declarative Python classes
-- native HCL2 output
-- fast direct rendering
-- product-specific integrations on top of a smaller core
-
-If your problem is "I still want HCL, but I do not want to hand-author every repeated shape in HCL", then this project is aimed exactly at that tension.
