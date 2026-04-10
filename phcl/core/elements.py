@@ -56,8 +56,10 @@ class Addressable:
             },
         )
     
-    def _get_identity(self) -> tuple[str, str]:
-        t, l = getattr(self, "_phcl_type"), getattr(self, "_phcl_label", class_to_tf(self.__class__.__name__))
+    @classmethod
+    def _phcl_identity(cls) -> tuple[str, str]:
+        t = getattr(cls, "_phcl_type", None)
+        l = getattr(cls, "_phcl_label", class_to_tf(cls.__name__))
 
         if not t or not l:
             raise ValueError("Resource type/label not set")
@@ -80,7 +82,7 @@ class Resource(Addressable, Node):
     """
 
     def _phcl_render(self) -> Dict[str, Any]:
-        t, l = self._get_identity()
+        t, l = self.__class__._phcl_identity()
 
         return {
             "resource": {
@@ -97,7 +99,7 @@ class Data(Addressable, Node):
     """
 
     def _phcl_render(self) -> Dict[str, Any]:
-        t, l = self._get_identity()
+        t, l = self.__class__._phcl_identity()
 
         return {
             "data": {
@@ -105,16 +107,4 @@ class Data(Addressable, Node):
                     l: super()._phcl_render()
                 }
             }
-        }
-
-
-class Dynamic(Block):
-    """
-    Example of overriding default block render.
-    """
-
-    def _phcl_render(self) -> Dict[str, Any]:
-        rendered: Dict[str, Any] = super()._phcl_render()
-        return {
-            "rendered": rendered
         }
