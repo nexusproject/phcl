@@ -35,20 +35,16 @@ class Resource(Addressable, Node):
     """
 
     def _phcl_render(self):
-        body = super()._phcl_render()
-
         t, l = self._get_identity()
-
-        if not t or not l:
-            raise ValueError("Resource type/label not set")
 
         return {
             "resource": {
                 t: {
-                    l: body
+                    l: super()._phcl_render()
                 }
             }
         }
+
 
 class Data(Addressable, Node):
     """
@@ -57,21 +53,18 @@ class Data(Addressable, Node):
     """
 
     def _phcl_render(self):
-        body = super()._phcl_render()
-
         t, l = self._get_identity()
 
-        if not t or not l:
-            raise ValueError("Resource type/label not set")
-
         return {
-            "resource": {
+            "data": {
                 t: {
-                    l: body
+                    l: super()._phcl_render()
                 }
             }
         }
 
 
 class Dynamic(Block):
-    pass
+    def _phcl_render(self):
+        rendered = super()._phcl_render()
+        return { "rendered" : rendered }
