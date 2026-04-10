@@ -19,6 +19,8 @@ PHCL solves this by moving generation, composition, and transformation into Pyth
 
 PHCL is a Python authoring layer over HCL2. You can keep native HCL where it works, replace only the painful parts, or move everything into Python — the output stays valid HCL2 either way.
 
+Moreover, PHCL lets you connect multiple HCL2-based projects and share data between them natively. Define values once in Python and reuse them across Terraform, Packer, and more.
+
 ## Architecture
 
 This repository contains the core PHCL layer. Terraform-specific primitives are implemented separately in `phcl-terraform`.
