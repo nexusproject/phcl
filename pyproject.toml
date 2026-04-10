@@ -14,5 +14,8 @@ readme = "README.md"
 requires-python = ">=3.9"
 dependencies = []
 
+[tool.setuptools]
+packages = ["phcl"]
+
 [project.scripts]
 phcl = "phcl.cli.phcl:main"
