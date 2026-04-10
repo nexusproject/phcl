@@ -155,6 +155,9 @@ class Node(Block):
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
 
+        if cls is not Node and Node in cls.__bases__ and "_phcl_kind" not in cls.__dict__:
+            cls._phcl_kind = class_to_label(cls.__name__)
+
         if cls.__dict__.get("_phcl_abstract", False):
             return
 
