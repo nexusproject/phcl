@@ -1,40 +1,36 @@
-#
-#
-import typing 
-from .dsl import Node, Block
 import re
-from pprint import pprint as p
+from typing import Any, Dict, Type
+from .dsl import Node, Block
 
 
 class Addressable:
     """
     Mixin for Terraform addressable blocks (resource, data).
 
-    Enables Class["type"] and requires parametrization before instantiation.
+    Enables Class["type"] syntax and stores Terraform resource/data type.
     https://developer.hashicorp.com/terraform/cli/state/resource-addressing
     """
 
-    __phcl_type: str  # Terraform resource/data type (resource_type)
+    __phcl_type: str  # Terraform resource/data type
 
     @classmethod
-    def __class_getitem__(cls, type_name: str):
-        safe = re.sub(r"[^0-9a-zA-Z_]", "_", type_name)
+    def __class_getitem__(cls, type_name: str) -> Type["Addressable"]:
+        safe: str = re.sub(r"[^0-9a-zA-Z_]", "_", type_name)
         return type(
             f"{cls.__name__}__{safe}",
             (cls,),
             {
-                "__phcl_type": type_name,  # terraform type
-            }
+                "__phcl_type": type_name,
+            },
         )
 
 
 class Resource(Addressable, Node):
     """
-    Resource does not own initialization.
-    Decorator sets internal PHCL metadata on the CLASS.
+    Terraform resource block.
     """
 
-    def _phcl_render(self):
+    def _phcl_render(self) -> Dict[str, Any]:
         t, l = self._get_identity()
 
         return {
@@ -48,11 +44,10 @@ class Resource(Addressable, Node):
 
 class Data(Addressable, Node):
     """
-    Resource does not own initialization.
-    Decorator sets internal PHCL metadata on the CLASS.
+    Terraform data block.
     """
 
-    def _phcl_render(self):
+    def _phcl_render(self) -> Dict[str, Any]:
         t, l = self._get_identity()
 
         return {
@@ -65,6 +60,12 @@ class Data(Addressable, Node):
 
 
 class Dynamic(Block):
-    def _phcl_render(self):
-        rendered = super()._phcl_render()
-        return { "rendered" : rendered }
+    """
+    Example of overriding default block render.
+    """
+
+    def _phcl_render(self) -> Dict[str, Any]:
+        rendered: Dict[str, Any] = super()._phcl_render()
+        return {
+            "rendered": rendered
+        }
