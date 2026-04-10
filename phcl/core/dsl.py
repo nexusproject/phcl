@@ -1,5 +1,5 @@
 from typing import Any, Dict, List, Type
-
+from ..syntax.expressions import Expression
 
 class Declarative:
     """
@@ -62,7 +62,7 @@ class Registry(type):
         return [
             node()._phcl_render()
             for node in cls._phcl_registry
-            if not node.__dict__.get("__phcl_abstract")
+            if not node.__dict__.get("_phcl_abstract")
         ]
 
 
@@ -123,7 +123,7 @@ class Block(Declarative, Renderable):
         # labelled block
         if self._phcl_label is not None:
             return {
-                self._phcl_label: body
+                self._phcl_label: [body]
             }
 
         return body
