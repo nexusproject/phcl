@@ -1,7 +1,9 @@
 <h1>
   <img src="assets/phcl-logo.svg" width="70" align="absmiddle"
-       style="position: relative; top: -6px; margin-right: 8px;">
+       style="margin-right: 8px;">
   PHCL
+  <img src="https://codecov.io/gh/nexusproject/phcl/branch/main/graph/badge.svg"
+       align="right">
 </h1>
 
 ## Idea
