@@ -1,6 +1,5 @@
 <h1>
-  <img src="assets/phcl-logo.svg" width="40" />
-  PHCL
+  <img src="assets/phcl-logo.svg" alt="" width="40" style="vertical-align: -0.18em;" /> PHCL
 </h1>
 
 ## Idea
