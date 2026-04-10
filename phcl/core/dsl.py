@@ -30,30 +30,40 @@ class Declarative:
         return attrs
 
 
+def abstract(cls):
+    cls.__phcl_abstract = True
+    return cls
+
+
 class Registry(type):
     _registry = []
 
     def __init__(self, *args):
+        name, bases = args[0], args[1]
+
         phcl_types = [
             getattr(parent, "__phcl_type", None)
-            for parent in args[1]
+            for parent in bases
             if hasattr(parent, "__phcl_type")
         ]
         if not phcl_types:
             return
 
         if len(phcl_types) > 1:
-            raise (
-                Exception(
-                    f"{args[0]} cannot be derived from two or more Resource/Data types"
-                )
+            raise Exception(
+                f"{name} cannot be derived from two or more Resource/Data types"
             )
 
-        setattr(self, "__phcl_label", args[0])
-
-        print("Registered --", args[0], args[1], self)
-
+        setattr(self, "__phcl_label", name)
         Registry._registry.append(self)
+
+    @classmethod
+    def render(cls):
+        return [
+            node()._phcl_render()
+            for node in cls._registry
+            if not node.__dict__.get("__phcl_abstract")
+        ]
 
 
 class Node(Declarative, metaclass=Registry):
@@ -61,36 +71,40 @@ class Node(Declarative, metaclass=Registry):
     Base AST node capable of recursive rendering.
     """
 
-    def _phcl_compute(self):
-        pass
-
     def _get_identity(self):
         return getattr(self, "__phcl_type"), getattr(self, "__phcl_label")
 
-    @classmethod
-    def _phcl_render_value(cls, value):
-        if isinstance(value, Node):
-            return value._phcl_render()
-
-        if isinstance(value, list):
-            return [cls._phcl_render_value(v) for v in value]
-
-        if isinstance(value, dict):
-            return {k: cls._phcl_render_value(v) for k, v in value.items()}
-
-        return value
 
     def _phcl_render(self):
-        """Node default render."""
-        self._phcl_compute()
-        return {k: self._phcl_render_value(v) for k, v in self._phcl_attributes.items()}
+        return {
+            k: v._phcl_render() if hasattr(v, "_phcl_render") else v
+            for k, v in self._phcl_attributes.items()
+        }
 
 
 class Block(Declarative):
     def __init__(self, **kwargs):
-        # super().__init__()
         self.__phcl_kwargs = kwargs
 
+    def _render_value(self, v):
+        if hasattr(v, "_phcl_render"):
+            if isinstance(v, type):
+                v = v()
+            return v._phcl_render()
+
+        if isinstance(v, list):
+            return [self._render_value(x) for x in v]
+
+        if isinstance(v, dict):
+            return {k: self._render_value(x) for k, x in v.items()}
+
+        return v
+
     def _phcl_render(self):
-        """Block default render."""
-        return {**self.__phcl_kwargs}
+        base = dict(getattr(type(self), "_phcl_attributes", {}))  # <-- ВОТ ЭТО
+        base.update(self.__phcl_kwargs)  # kwargs поверх
+
+        p(base)
+        return {k: self._render_value(v) for k, v in base.items()}
+
+

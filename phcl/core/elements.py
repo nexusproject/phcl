@@ -5,27 +5,35 @@ from .dsl import Node, Block
 import re
 from pprint import pprint as p
 
-def sanitize(type_name: str) -> str:
-    """Convert Terraform type name into a safe Python class identifier."""
-    return re.sub(r"[^0-9a-zA-Z_]", "_", type_name)
+
+class Addressable:
+    """
+    Mixin for Terraform addressable blocks (resource, data).
+
+    Enables Class["type"] and requires parametrization before instantiation.
+    https://developer.hashicorp.com/terraform/cli/state/resource-addressing
+    """
+
+    __phcl_type: str  # Terraform resource/data type (resource_type)
+
+    @classmethod
+    def __class_getitem__(cls, type_name: str):
+        safe = re.sub(r"[^0-9a-zA-Z_]", "_", type_name)
+        return type(
+            f"{cls.__name__}__{safe}",
+            (cls,),
+            {
+                "__phcl_type": type_name,  # terraform type
+            }
+        )
 
 
-class Resource(Node):
+class Resource(Addressable, Node):
     """
     Resource does not own initialization.
     Decorator sets internal PHCL metadata on the CLASS.
     """
 
-    @classmethod
-    def __class_getitem__(cls, type_name: str):
-        """Resource['subtype']"""
-        safe = sanitize(type_name)
-        return type(
-            f"Resource__{safe}",
-            (cls,),
-            {"__phcl_type": safe}
-        )
-    
     def _phcl_render(self):
         body = super()._phcl_render()
 
@@ -42,22 +50,12 @@ class Resource(Node):
             }
         }
 
-class Data(Node):
+class Data(Addressable, Node):
     """
     Resource does not own initialization.
     Decorator sets internal PHCL metadata on the CLASS.
     """
 
-    @classmethod
-    def __class_getitem__(cls, type_name: str):
-        """Data['subtype']"""
-        safe = sanitize(type_name)
-        return type(
-            f"Data__{safe}",
-            (cls,),
-            {"__phcl_type": safe}
-        )
-    
     def _phcl_render(self):
         body = super()._phcl_render()
 
@@ -73,6 +71,7 @@ class Data(Node):
                 }
             }
         }
+
 
 class Dynamic(Block):
     pass
