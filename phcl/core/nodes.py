@@ -70,60 +70,41 @@ class Block(Declarative):
         self.__dict__.update(kwargs)
 
     def _phcl_normalize_attr(self, name, value):
+        """
+        Hook for product-specific attribute normalization.
+
+        The core leaves attribute values unchanged by default. Higher-level
+        layers can override this to adapt special fields before rendering or
+        spec generation, for example converting Python iterables into a
+        product-specific HCL structure.
+        """
         return value
 
-    def _phcl_build(self, key: Optional[str] = None) -> dict:
-        def emit(k, v):
+    def _phcl_spec(self) -> dict:
+        def emit(v):
             if isinstance(v, Block):
-                return v._phcl_build()
+                return {
+                    k: emit(x)
+                    for k, x in v._phcl_attributes.items()
+                }
+
             if isinstance(v, list):
-                return [
-                    emit(k, x) if isinstance(x, Block) else emit(None, x) for x in v
-                ]
+                return [emit(x) for x in v]
+
             if isinstance(v, Mapping):
-                return {kk: emit(kk, vv) for kk, vv in v.items()}
+                return {k: emit(x) for k, x in v.items()}
+
             if isinstance(v, Iterable) and not isinstance(v, (str, bytes)):
-                return [
-                    emit(k, x) if isinstance(x, Block) else emit(None, x) for x in v
-                ]
+                return [emit(x) for x in v]
+
             return v
 
-        body = {
-            k: emit(k, self._phcl_normalize_attr(k, v))
-            for k, v in self._phcl_attributes.items()
-        }
-        node = {key: body} if key else body
-
-        for lbl in self._phcl_label or []:
-            node = {lbl: node}
-
-        return node
-
-    def _phcl_render(self, v):
-        if isinstance(v, Block):
-            return {
-                k: self._phcl_render(x)
-                for k, x in v._phcl_attributes.items()
-            }
-
-        if isinstance(v, list):
-            return [self._phcl_render(x) for x in v]
-
-        if isinstance(v, Mapping):
-            return {k: self._phcl_render(x) for k, x in v.items()}
-
-        if isinstance(v, Iterable) and not isinstance(v, (str, bytes)):
-            return [self._phcl_render(x) for x in v]
-
-        return v
-
-    def _phcl_spec(self) -> dict:
         labels = ((class_to_label(self.__class__.__name__),) + self._phcl_label) if self._phcl_label else ()
         return {
             "kind": self._phcl_kind,
             "labels": labels,
             "attrs": {
-                k: self._phcl_render(self._phcl_normalize_attr(k, v))
+                k: emit(self._phcl_normalize_attr(k, v))
                 for k, v in self._phcl_attributes.items()
             },
         }
@@ -165,6 +146,3 @@ class Node(Block):
             return
 
         Registry.add(cls)
-
-    def _phcl_build(self) -> dict:
-        return super()._phcl_build(self.__class__._phcl_logical_name())
