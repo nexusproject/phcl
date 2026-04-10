@@ -1,8 +1,9 @@
 #
 #
+from pprint import pprint as p
 
 
-class DSL:
+class Declarative:
     """
     Base class for declarative constructs.
     """
@@ -12,7 +13,7 @@ class DSL:
         attrs = {}
 
         for base in reversed(self.__class__.mro()):
-            if base is DSL:
+            if base is Declarative:
                 continue
 
             for name, value in base.__dict__.items():
@@ -29,13 +30,42 @@ class DSL:
         return attrs
 
 
-class Node(DSL):
+class Registry(type):
+    _registry = []
+
+    def __init__(self, *args):
+        phcl_types = [
+            getattr(parent, "__phcl_type", None)
+            for parent in args[1]
+            if hasattr(parent, "__phcl_type")
+        ]
+        if not phcl_types:
+            return
+
+        if len(phcl_types) > 1:
+            raise (
+                Exception(
+                    f"{args[0]} cannot be derived from two or more Resource/Data types"
+                )
+            )
+
+        setattr(self, "__phcl_label", args[0])
+
+        print("Registered --", args[0], args[1], self)
+
+        Registry._registry.append(self)
+
+
+class Node(Declarative, metaclass=Registry):
     """
     Base AST node capable of recursive rendering.
     """
 
     def _phcl_compute(self):
         pass
+
+    def _get_identity(self):
+        return getattr(self, "__phcl_type"), getattr(self, "__phcl_label")
 
     @classmethod
     def _phcl_render_value(cls, value):
@@ -51,15 +81,16 @@ class Node(DSL):
         return value
 
     def _phcl_render(self):
+        """Node default render."""
         self._phcl_compute()
         return {k: self._phcl_render_value(v) for k, v in self._phcl_attributes.items()}
 
 
-class Block(Node):
+class Block(Declarative):
     def __init__(self, **kwargs):
-        super().__init__()
+        # super().__init__()
         self.__phcl_kwargs = kwargs
 
     def _phcl_render(self):
-        base = super()._phcl_render()
-        return {**base, **self.__phcl_kwargs}
+        """Block default render."""
+        return {**self.__phcl_kwargs}
