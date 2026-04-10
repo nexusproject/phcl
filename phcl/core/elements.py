@@ -41,8 +41,9 @@ class Addressable:
     https://developer.hashicorp.com/terraform/cli/state/resource-addressing
     """
 
-    _phcl_type: str  # Terraform resource/data type
-    _phcl_label: str  # Terraform label
+    _phcl_type: str  # HCL block subtype (e.g. aws_instance, amazon-ebs, job type)
+    _phcl_label: str  # HCL block label (identity name)
+    _phcl_expression_prefix: str | None = None  # Optional expression prefix (e.g. "data" for Terraform data sources)
 
     @classmethod
     def __class_getitem__(cls, type_name: str) -> Type["Addressable"]:
@@ -52,7 +53,6 @@ class Addressable:
             (cls,),
             {
                 "_phcl_type": type_name,
-                # "_phcl_label": class_to_tf(cls.__class__.__name__)
             },
         )
     
@@ -66,15 +66,19 @@ class Addressable:
 
         return t, l
     
+    
     @classmethod
     @property
     def _(cls):
-        t, l = getattr(cls, "_phcl_type"), getattr(cls, "_phcl_label", class_to_tf(cls.__name__))
+        t, l = cls._phcl_identity()
 
-        if issubclass(cls, Data):
-            return Expression(f"data.{t}.{l}")
+        parts = []
+        if cls._phcl_expression_prefix:
+            parts.append(cls._phcl_expression_prefix)
 
-        return Expression(f"{t}.{l}")
+        parts.extend([t, l])
+
+        return Expression(".".join(parts))
 
 class Resource(Addressable, Node):
     """
@@ -97,6 +101,8 @@ class Data(Addressable, Node):
     """
     Terraform data block.
     """
+
+    _phcl_expression_prefix = "data"
 
     def _phcl_render(self) -> Dict[str, Any]:
         t, l = self.__class__._phcl_identity()
