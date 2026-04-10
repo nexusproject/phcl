@@ -35,7 +35,7 @@ class Registry(type):
     Registers Node subclasses that should be rendered.
     """
 
-    _registry: List[Type["Node"]] = []
+    _phcl_registry: List[Type["Node"]] = []
 
     def __init__(self, *args: Any) -> None:
         name: str = args[0]
@@ -55,13 +55,13 @@ class Registry(type):
                 f"{name} cannot inherit multiple Resource/Data types"
             )
 
-        Registry._registry.append(self)
+        Registry._phcl_registry.append(self)
 
     @classmethod
     def render(cls) -> List[Dict[str, Any]]:
         return [
             node()._phcl_render()
-            for node in cls._registry
+            for node in cls._phcl_registry
             if not node.__dict__.get("__phcl_abstract")
         ]
 
