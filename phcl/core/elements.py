@@ -11,7 +11,8 @@ class Addressable:
     https://developer.hashicorp.com/terraform/cli/state/resource-addressing
     """
 
-    __phcl_type: str  # Terraform resource/data type
+    _phcl_type: str  # Terraform resource/data type
+    _phcl_label: str  # Terraform label
 
     @classmethod
     def __class_getitem__(cls, type_name: str) -> Type["Addressable"]:
@@ -20,10 +21,17 @@ class Addressable:
             f"{cls.__name__}__{safe}",
             (cls,),
             {
-                "__phcl_type": type_name,
+                "_phcl_type": type_name,
             },
         )
+    
+    def _get_identity(self) -> tuple[str, str]:
+        t, l = getattr(self, "_phcl_type"), getattr(self, "_phcl_label", self.__class__.__name__)
 
+        if not t or not l:
+            raise ValueError("Resource type/label not set")
+
+        return t, l
 
 class Resource(Addressable, Node):
     """

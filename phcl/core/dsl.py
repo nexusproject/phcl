@@ -42,9 +42,9 @@ class Registry(type):
         bases: tuple[type, ...] = args[1]
 
         phcl_types = [
-            getattr(parent, "__phcl_type", None)
+            getattr(parent, "_phcl_type", None)
             for parent in bases
-            if hasattr(parent, "__phcl_type")
+            if hasattr(parent, "_phcl_type")
         ]
 
         if not phcl_types:
@@ -55,7 +55,7 @@ class Registry(type):
                 f"{name} cannot inherit multiple Resource/Data types"
             )
 
-        setattr(self, "__phcl_label", name)
+        # setattr(self, "__phcl_label", name)
         Registry._registry.append(self)
 
     @classmethod
@@ -98,29 +98,33 @@ class Node(Declarative, Renderable, metaclass=Registry):
     Top-level PHCL entity.
     """
 
-    def _get_identity(self) -> tuple[str, str]:
-        t, l = getattr(self, "__phcl_type"), getattr(self, "__phcl_label")
-
-        if not t or not l:
-            raise ValueError("Resource type/label not set")
-        
-        return t, l
+    pass
 
 
 class Block(Declarative, Renderable):
-    """
-    Nested block. Supports inheritance + ctor override.
-    """
+    _phcl_label: str | None = None
 
-    def __init__(self, **kwargs: Any) -> None:
+    @classmethod
+    def __class_getitem__(cls, label: str):
+        return type(
+            f"{cls.__name__}__{label}",
+            (cls,),
+            {"_phcl_label": label},
+        )
+
+    def __init__(self, **kwargs):
         for k in kwargs:
             if k.startswith("_"):
                 raise ValueError("Attributes starting with '_' are reserved")
-
         self.__dict__.update(kwargs)
 
+    def _phcl_render(self):
+        body = super()._phcl_render()
 
-def abstract(cls: Type[Node]) -> Type[Node]:
-    """Marks Node class as non-renderable."""
-    cls.__phcl_abstract = True
-    return cls
+        # labelled block
+        if self._phcl_label is not None:
+            return {
+                self._phcl_label: body
+            }
+
+        return body
