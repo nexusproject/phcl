@@ -9,22 +9,22 @@ It doesn’t hide HCL2 behind abstractions — it preserves its shape, but adds 
 
 ## Why
 
-In Terraform, HCL works well for describing infrastructure, but not for dynamically generating it.
+In Terraform, HCL works well for describing infrastructure, but is not really designed for dynamic infrastructure generation.
 
-A common example is role-based access-control or platform configuration spread across teams, roles, groups, environments, regions, and product-specific settings. As soon as the system grows, the logic often turns into a kind of cartesian product of concerns, and writing that logic directly in HCL becomes hard to maintain and sometimes almost impossible to express cleanly.
+As systems grow, configuration often becomes a mix of concerns: teams, roles, environments, regions, products. This quickly turns into a cartesian explosion, and expressing that logic directly in HCL becomes hard to maintain and awkward to write.
 
-The same problem appears when infrastructure has to be derived from external sources of data. You may want to read YAML, JSON, database records, APIs, or any other source of truth, transform that data, combine it, and turn it into resources. HCL2 can describe the final result, but it is not a comfortable language for complex transformation logic.
+The same happens when infrastructure depends on external data. You may need to read YAML, JSON, databases, or APIs, transform and combine that data, and turn it into resources. HCL can describe the final result, but it is not built for this kind of logic.
 
-PHCL solves this by letting you write that logic in Python while still producing valid native HCL2 output. The goal is to keep the shape of HCL familiar, but move generation, transformation, and composition into a language that is actually built for it.
+PHCL solves this by moving generation, composition, and transformation into Python while still producing valid native HCL2. It keeps HCL familiar, but uses a language that is actually suited to building it.
 
-At the same time, PHCL stays disciplined about its boundaries:
+## Boundaries
 
 - Python is used for declaration, reuse, generation, and transformation.
-- HCL stays the output format.
+- HCL remains the output format.
 - HCL expressions stay HCL expressions when needed.
-- Product-specific semantics should live above the core DSL.
+- Product-specific semantics live above the core DSL.
 
-You can think of PHCL as a Python-native authoring layer over HCL2: it keeps the shape of HCL familiar, but compiles it from a more expressive language. The transition is meant to be gradual. You can keep native HCL2 expressions where they still make sense, replace only the parts that become painful, or move the whole structure into Python and still end up with relevant native HCL2 output either way.
+PHCL is a Python authoring layer over HCL2. You can keep native HCL where it works, replace only the painful parts, or move everything into Python — the output stays valid HCL2 either way.
 
 ## Architecture
 This repository contains the base PHCL layer. Terraform-specific primitives and semantics are intended to live in a separate `phcl-terraform` package built on top of it.
