@@ -1,7 +1,9 @@
+from collections.abc import Iterable, Mapping
 from typing import Optional, Tuple
 import re
 
 from .declarative import Declarative
+from .expression import Reference
 from .registry import Registry
 
 
@@ -52,12 +54,13 @@ class Block(Declarative):
         if not isinstance(labels, tuple):
             labels = (labels,)
 
-        print("--> ", labels)
-
         return type(
             f"{cls.__name__}__" + "_".join(labels),
             (cls,),
-            {"_phcl_label": labels},
+            {
+                "_phcl_label": labels,
+                "_phcl_abstract": True,
+            },
         )
 
     def __init__(self, **kwargs):
@@ -65,6 +68,9 @@ class Block(Declarative):
             if k.startswith("_"):
                 raise ValueError("Attributes starting with '_' are reserved")
         self.__dict__.update(kwargs)
+
+    def _phcl_normalize_attr(self, name, value):
+        return value
 
     def _phcl_build(self, key: Optional[str] = None) -> dict:
         def emit(k, v):
@@ -74,11 +80,18 @@ class Block(Declarative):
                 return [
                     emit(k, x) if isinstance(x, Block) else emit(None, x) for x in v
                 ]
-            if isinstance(v, dict):
+            if isinstance(v, Mapping):
                 return {kk: emit(kk, vv) for kk, vv in v.items()}
+            if isinstance(v, Iterable) and not isinstance(v, (str, bytes)):
+                return [
+                    emit(k, x) if isinstance(x, Block) else emit(None, x) for x in v
+                ]
             return v
 
-        body = {k: emit(k, v) for k, v in self._phcl_attributes.items()}
+        body = {
+            k: emit(k, self._phcl_normalize_attr(k, v))
+            for k, v in self._phcl_attributes.items()
+        }
         node = {key: body} if key else body
 
         for lbl in self._phcl_label or []:
@@ -96,8 +109,11 @@ class Block(Declarative):
         if isinstance(v, list):
             return [self._phcl_render(x) for x in v]
 
-        if isinstance(v, dict):
+        if isinstance(v, Mapping):
             return {k: self._phcl_render(x) for k, x in v.items()}
+
+        if isinstance(v, Iterable) and not isinstance(v, (str, bytes)):
+            return [self._phcl_render(x) for x in v]
 
         return v
 
@@ -106,7 +122,10 @@ class Block(Declarative):
         return {
             "kind": self._phcl_kind,
             "labels": labels,
-            "attrs": {k: self._phcl_render(v) for k, v in self._phcl_attributes.items()},
+            "attrs": {
+                k: self._phcl_render(self._phcl_normalize_attr(k, v))
+                for k, v in self._phcl_attributes.items()
+            },
         }
 
 
@@ -120,6 +139,19 @@ class Node(Block):
 
     _phcl_registry = Registry._phcl_registry
 
+    @classmethod
+    def _phcl_reference_base(cls) -> str:
+        raise TypeError(f"{cls.__name__} is not addressable in reference-space")
+
+    @classmethod
+    def _phcl_logical_name(cls) -> str:
+        return class_to_label(cls.__name__)
+
+    @classmethod
+    @property
+    def _(cls):
+        return Reference(cls._phcl_reference_base())
+
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
 
@@ -129,16 +161,7 @@ class Node(Block):
         if cls is Node:
             return
 
-        if Node in cls.__bases__:
-            return
-
-        for base in cls.__bases__:
-            if Node in base.__bases__:
-                return
-
         Registry.add(cls)
 
-        print("NODE ", cls._phcl_label)
-
     def _phcl_build(self) -> dict:
-        return super()._phcl_build(class_to_label(self.__class__.__name__))
+        return super()._phcl_build(self.__class__._phcl_logical_name())

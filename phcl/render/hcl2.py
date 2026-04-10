@@ -7,7 +7,7 @@ This backend is intentionally small and purpose-built:
 - `Expression` values are treated as opaque HCL fragments.
 """
 
-from phcl.core.expression import Expression
+from phcl.core.expression import Expression, Reference
 from phcl.core.nodes import Block, Node, class_to_label
 
 
@@ -25,7 +25,8 @@ def walk_block(block: Block):
     attrs = []
     nested = []
 
-    for name, value in block._phcl_attributes.items():
+    for name, raw_value in block._phcl_attributes.items():
+        value = block._phcl_normalize_attr(name, raw_value)
         if isinstance(value, Block):
             nested.append((name, value))
             continue
@@ -60,6 +61,11 @@ def render_value(value, level: int = 0) -> str:
     scalars, lists, dicts, and raw `Expression` fragments.
     """
     if isinstance(value, Expression):
+        # Expressions are already authored in HCL syntax and must not
+        # be quoted or transformed by the text backend.
+        return value.source
+
+    if isinstance(value, Reference):
         # Expressions are already authored in HCL syntax and must not
         # be quoted or transformed by the text backend.
         return value.source

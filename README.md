@@ -1,4 +1,4 @@
-# PHCL
+# <img src="assets/phcl-logo.svg" alt="PHCL logo" width="28" valign="middle"> PHCL
 
 ## Idea
 
