@@ -2,9 +2,10 @@
 
 ## Idea
 
-Python-powered structural DSL for authoring native HCL2.
+A Python DSL that compiles to native HCL2
 
-PHCL is an attempt to replace HCL2 with Python as transparently and seamlessly as possible: keeping the code recognizable, direct, and close enough to native HCL2 that it still reads like infrastructure configuration rather than an unrelated framework, while at the same time opening access to the full expressive power of Python for composing, generating, transforming, and scaling HCL2 code. The goal is not to hide HCL behind abstractions for their own sake, but to preserve its familiar shape and extend it with everything a powerful high-level language makes possible, pushing infrastructure as code toward something more dynamic, more flexible, and genuinely code-driven.
+PHCL lets you write HCL2 using Python while keeping the result close to real HCL2.
+It doesn’t hide HCL2 behind abstractions — it preserves its shape, but adds Python’s power for generation, composition, and transformation.
 
 ## Why
 
