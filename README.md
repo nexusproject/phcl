@@ -17,23 +17,24 @@ The same happens when infrastructure depends on external data. You may need to r
 
 PHCL solves this by moving generation, composition, and transformation into Python while still producing valid native HCL2. It keeps HCL familiar, but uses a language that is actually suited to building it.
 
-## Boundaries
-
-- Python is used for declaration, reuse, generation, and transformation.
-- HCL remains the output format.
-- HCL expressions stay HCL expressions when needed.
-- Product-specific semantics live above the core DSL.
-
 PHCL is a Python authoring layer over HCL2. You can keep native HCL where it works, replace only the painful parts, or move everything into Python — the output stays valid HCL2 either way.
 
 ## Architecture
-This repository contains the base PHCL layer. Terraform-specific primitives and semantics are intended to live in a separate `phcl-terraform` package built on top of it.
+
+This repository contains the core PHCL layer. Terraform-specific primitives are implemented separately in `phcl-terraform`.
 
 PHCL is split into three parts:
 
-- `core` defines the declarative model
-- `render` turns that model into HCL2 text
-- `cli` executes files in isolation and writes generated outputs
+- `core` — declarative model
+- `render` — HCL2 generation
+- `cli` — executes files and writes output
+
+Design boundaries:
+
+- Python handles declaration, reuse, generation, and transformation
+- HCL remains the output format
+- HCL expressions stay native when needed
+- Product-specific semantics live above the core DSL
 
 ## CLI
 
