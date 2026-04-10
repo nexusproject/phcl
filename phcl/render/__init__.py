@@ -1,1 +1,1 @@
-from .hcl import build_hcl
+from .hcl2 import build_hcl
