@@ -1,7 +1,7 @@
-<h1 align="left">
-  <img src="assets/phcl-logo.svg" alt="" width="64" style="vertical-align: middle;" />
-  PHCL
-</h1>
+<p align="left">
+  <img src="assets/phcl-logo.svg" width="48" style="vertical-align: -10px; margin-right: 8px;" />
+  <span style="font-size: 32px; font-weight: 700;">PHCL</span>
+</p>
 
 ## Idea
 
