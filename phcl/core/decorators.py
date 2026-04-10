@@ -1,11 +1,16 @@
 from collections.abc import Iterable, Mapping
 
+from .registry import Registry
+
 
 def abstract(cls):
     """
     Mark a declaration as abstract so it is skipped by the registry.
     """
     cls._phcl_abstract = True
+    Registry._phcl_registry = [
+        node_cls for node_cls in Registry._phcl_registry if node_cls is not cls
+    ]
     return cls
 
 def generate(source):
