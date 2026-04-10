@@ -1,9 +1,19 @@
-from typing import Any, Dict, List, Type
-from ..syntax.expressions import Expression
+from typing import Any, Dict, List, Type, Optional, Tuple
+from pprint import pprint as p
+import re
+from dataclasses import dataclass
+
 
 class Declarative:
     """
-    Declarative base.
+    Declarative DSL base.
+
+    Provides declarative composition via inheritance:
+    attributes defined on base classes are merged and overridden
+    by subclasses to form the final configuration body.
+
+    This class does not represent an HCL block itself —
+    it only defines *what* should be rendered, not *how*.
     """
 
     @property
@@ -30,85 +40,59 @@ class Declarative:
         return attrs
 
 
-class Registry(type):
+def class_to_label(name: str) -> str:
     """
-    Registers Node subclasses that should be rendered.
+    Convert Python class name (PascalCase with acronyms)
+    to Terraform-style snake_case.
+
+    Examples:
+        WebEC2        -> web_ec2
+        IAMRole      -> iam_role
+        ALBListener  -> alb_listener
     """
+    # split before last capital in acronym sequences
+    name = re.sub(r"([A-Z]+)([A-Z][a-z])", r"\1_\2", name)
+    name = re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", name)
+    return name.lower()
 
-    _phcl_registry: List[Type["Node"]] = []
 
-    def __init__(self, *args: Any) -> None:
-        name: str = args[0]
-        bases: tuple[type, ...] = args[1]
+class Block(Declarative):
+    """
+    HCL block representation.
 
-        phcl_types = [
-            getattr(parent, "_phcl_type", None)
-            for parent in bases
-            if hasattr(parent, "_phcl_type")
-        ]
+    Represents a generic HCL block as defined in the HCL language specification.
+    A block consists of:
+      - an optional sequence of labels (0..N)
+      - a body containing attributes and/or nested blocks
 
-        if not phcl_types:
-            return
+    This class is format-agnostic and does NOT perform final rendering.
+    It only builds a structured, nested representation that can later be
+    rendered into Terraform JSON, HCL text, or any other backend.
 
-        if len(phcl_types) > 1:
-            raise Exception(
-                f"{name} cannot inherit multiple Resource/Data types"
-            )
+    Examples (HCL):
+      backend "s3" { ... }
+      ingress { ... }
+      provisioner "file" { ... }
 
-        Registry._phcl_registry.append(self)
+    Examples (PHCL):
+      backend = B["s3"](...)
+      ingress = B(...)
+      provisioner = B["file"](...)
+    """
+    _phcl_kind: str | None = None
+    _phcl_label: tuple[str, ...] | None = None
 
     @classmethod
-    def render(cls) -> List[Dict[str, Any]]:
-        return [
-            node()._phcl_render()
-            for node in cls._phcl_registry
-            if not node.__dict__.get("_phcl_abstract")
-        ]
+    def __class_getitem__(cls, labels):
+        if not isinstance(labels, tuple):
+            labels = (labels,)
 
+        print("--> ", labels)
 
-class Renderable:
-    """
-    Default render.
-    Recursive materialization of declarative values.
-    """
-
-    def _phcl_render_value(self, v: Any) -> Any:
-        if hasattr(v, "_phcl_render"):
-            v = v() if isinstance(v, type) else v
-            return v._phcl_render()
-
-        if isinstance(v, list) or isinstance(v, tuple):
-            return [self._phcl_render_value(x) for x in v]
-
-        if isinstance(v, dict):
-            return {k: self._phcl_render_value(x) for k, x in v.items()}
-
-        return v
-
-    def _phcl_render(self) -> Dict[str, Any]:
-        return {
-            k: self._phcl_render_value(v)
-            for k, v in self._phcl_attributes.items()
-        }
-
-
-class Node(Declarative, Renderable, metaclass=Registry):
-    """
-    Top-level PHCL entity.
-    """
-
-    pass
-
-
-class Block(Declarative, Renderable):
-    _phcl_label: str | None = None
-
-    @classmethod
-    def __class_getitem__(cls, label: str):
         return type(
-            f"{cls.__name__}__{label}",
+            f"{cls.__name__}__" + "_".join(labels),
             (cls,),
-            {"_phcl_label": label},
+            {"_phcl_label": labels},
         )
 
     def __init__(self, **kwargs):
@@ -117,13 +101,47 @@ class Block(Declarative, Renderable):
                 raise ValueError("Attributes starting with '_' are reserved")
         self.__dict__.update(kwargs)
 
-    def _phcl_render(self):
-        body = super()._phcl_render()
+    def _phcl_build(self, key: Optional[str] = None) -> dict:
+        def emit(k, v):
+            if isinstance(v, Block):
+                return v._phcl_build()
+            if isinstance(v, list):
+                return [
+                    emit(k, x) if isinstance(x, Block) else emit(None, x) for x in v
+                ]
+            if isinstance(v, dict):
+                return {kk: emit(kk, vv) for kk, vv in v.items()}
+            return v
 
-        # labelled block
-        if self._phcl_label is not None:
+        body = {k: emit(k, v) for k, v in self._phcl_attributes.items()}
+        node = {key: body} if key else body
+
+        # Apply block labels as outer nesting levels (HCL JSON semantics)
+        for lbl in self._phcl_label or []:
+            node = {lbl: node}
+
+        return node
+    
+    def _phcl_render(self, v):
+        if isinstance(v, Block):
             return {
-                self._phcl_label: [body]
+                k: self._phcl_render(x)
+                for k, x in v._phcl_attributes.items()
             }
 
-        return body
+        if isinstance(v, list):
+            return [self._phcl_render(x) for x in v]
+
+        if isinstance(v, dict):
+            return {k: self._phcl_render(x) for k, x in v.items()}
+
+        return v
+
+    def _phcl_spec(self) -> dict:
+        return {
+            "kind": self._phcl_kind,
+            "labels": (class_to_label(self.__class__.__name__),) + self._phcl_label or (),
+            "attrs": {k: self._phcl_render(v) for k, v in self._phcl_attributes.items()},
+        }
+
+
