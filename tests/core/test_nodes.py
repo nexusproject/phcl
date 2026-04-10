@@ -1,0 +1,91 @@
+import pytest
+
+from phcl.core.decorators import abstract
+from phcl.core.expression import Reference
+from phcl.core.nodes import Block, Node, class_to_label
+from phcl.core.registry import Registry
+
+
+@pytest.fixture(autouse=True)
+def reset_registry():
+    Registry.reset()
+    yield
+    Registry.reset()
+
+
+def test_class_to_label_converts_pascal_case_and_acronyms():
+    assert class_to_label("WebEC2") == "web_ec2"
+    assert class_to_label("XMLParser") == "xml_parser"
+    assert class_to_label("HttpServer") == "http_server"
+
+
+def test_block_class_getitem_sets_labels_and_marks_variant_abstract():
+    ApiBlock = Block["api", "v1"]
+
+    assert ApiBlock._phcl_label == ("api", "v1")
+    assert ApiBlock.__dict__["_phcl_abstract"] is True
+
+
+def test_block_rejects_private_constructor_attributes():
+    with pytest.raises(ValueError, match="reserved"):
+        Block(_secret="nope")
+
+
+def test_block_spec_includes_class_name_label_and_nested_values():
+    class Service(Block["api"]):
+        _phcl_kind = "service"
+        replicas = 2
+        metadata = {"team": "platform"}
+        ports = (80, 443)
+
+    spec = Service()._phcl_spec()
+
+    assert spec == {
+        "kind": "service",
+        "labels": ("service", "api"),
+        "attrs": {
+            "replicas": 2,
+            "metadata": {"team": "platform"},
+            "ports": [80, 443],
+        },
+    }
+
+
+def test_node_direct_subclass_gets_kind_from_class_name_and_registers():
+    class Service(Node):
+        pass
+
+    assert Service._phcl_kind == "service"
+    assert Registry.renderables() == [Service]
+
+
+def test_abstract_node_is_not_registered_but_concrete_child_is():
+    @abstract
+    class Base(Node):
+        pass
+
+    class Concrete(Base):
+        pass
+
+    assert Base not in Registry.renderables()
+    assert Concrete in Registry.renderables()
+
+
+def test_node_reference_entrypoint_uses_reference_base():
+    class Service(Node):
+        @classmethod
+        def _phcl_reference_base(cls) -> str:
+            return "service.main"
+
+    ref = Service._
+
+    assert isinstance(ref, Reference)
+    assert str(ref) == "service.main"
+
+
+def test_node_reference_entrypoint_raises_for_non_addressable_nodes():
+    class Service(Node):
+        pass
+
+    with pytest.raises(TypeError, match="not addressable"):
+        _ = Service._
