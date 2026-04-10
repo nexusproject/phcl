@@ -19,3 +19,7 @@ class Registry:
     @classmethod
     def render(cls):
         return cls.renderables()
+
+    @classmethod
+    def reset(cls):
+        cls._phcl_registry.clear()
