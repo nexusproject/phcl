@@ -139,7 +139,10 @@ def command_build(args) -> int:
             stdout=args.stdout,
         )
         results.append(result)
-        if not args.stdout:
+        if args.stdout:
+            if result.status != "stdout":
+                print_result(result, Path.cwd())
+        else:
             print_result(result, Path.cwd())
 
     written = sum(result.status == "write" for result in results)

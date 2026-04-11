@@ -162,3 +162,24 @@ def test_command_build_rejects_stdout_for_directory(tmp_path, capsys):
 
     assert code == 1
     assert "--stdout can only be used with a single file target" in captured.err
+
+
+def test_command_build_reports_failures_in_stdout_mode(tmp_path, capsys):
+    source = write_file(
+        tmp_path / "broken.tf.py",
+        "raise RuntimeError('boom')\n",
+    )
+
+    args = Namespace(
+        target=str(source),
+        out_dir=None,
+        ext=".tf",
+        stdout=True,
+    )
+
+    code = command_build(args)
+    captured = capsys.readouterr()
+
+    assert code == 1
+    assert "fail" in captured.err
+    assert "boom" in captured.err
