@@ -5,10 +5,9 @@
   <img src="https://codecov.io/gh/nexusproject/phcl/branch/main/graph/badge.svg"
        align="right">
 </h1>
+PHCL is a Python DSL that compiles to native HCL2.
 
 ## Idea
-
-PHCL is a Python DSL that compiles to native HCL2.
 
 HCL is great for describing infrastructure, but not for generating it. As complexity grows, configuration turns into a combinatorial explosion and becomes hard to maintain.
 
