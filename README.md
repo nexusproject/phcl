@@ -8,54 +8,71 @@
 
 ## Idea
 
-A Python DSL that compiles to native HCL2
+PHCL is a Python DSL that compiles to native HCL2.
 
-PHCL lets you write HCL2 using Python while keeping the result close to real HCL2.
-It doesn’t hide HCL2 behind abstractions — it preserves its shape, but adds Python’s power for generation, composition, and transformation.
+HCL is great for describing infrastructure, but not for generating it. As complexity grows, configuration turns into a combinatorial explosion and becomes hard to maintain.
 
-## Why
+It also struggles when infrastructure depends on external data — YAML, JSON, databases, APIs — where data needs to be loaded, transformed, and combined before turning into resources.
 
-In Terraform, HCL works well for describing infrastructure, but is not really designed for dynamic infrastructure generation.
-
-As systems grow, configuration often becomes a mix of concerns: teams, roles, environments, regions, products. This quickly turns into a cartesian explosion, and expressing that logic directly in HCL becomes hard to maintain and awkward to write.
-
-The same happens when infrastructure depends on external data. You may need to read YAML, JSON, databases, or APIs, transform and combine that data, and turn it into resources. HCL can describe the final result, but it is not built for this kind of logic.
-
-PHCL solves this by moving generation, composition, and transformation into Python while still producing valid native HCL2. It keeps HCL familiar, but uses a language that is actually suited to building it.
-
-PHCL is a Python authoring layer over HCL2. You can keep native HCL where it works, replace only the painful parts, or move everything into Python — the output stays valid HCL2 either way.
-
-Moreover, PHCL lets you connect multiple HCL2-based projects and share data between them natively. Define values once in Python and reuse them across Terraform, Packer, and more.
+PHCL moves generation, composition, and data processing into Python while keeping the output as clean, readable HCL2.
 
 ## Architecture
 
-This repository contains the core PHCL layer. Terraform-specific primitives are implemented separately in `phcl-terraform`.
+This repository contains the PHCL core.
+
+Product-specific layers are expected to live above it in separate packages.
 
 PHCL is split into three parts:
 
 - `core` — declarative model
 - `render` — HCL2 generation
-- `cli` — executes files and writes output
+- `cli` — compiles source files and writes output
 
-Design boundaries:
+Generation cycle:
+
+1. execute a PHCL source file
+2. collect concrete `Node` subclasses in the registry
+3. render them as top-level output
+4. render nested `Block(...)` values as part of node bodies
+
+- `Node` descendants are the root units of generation
+- plain `Block` values are structural content, not top-level declarations
+- abstract declarations are skipped
+
+Boundaries:
 
 - Python handles declaration, reuse, generation, and transformation
 - HCL remains the output format
 - HCL expressions stay native when needed
-- Product-specific semantics live above the core DSL
+- product-specific semantics live above the core DSL
+
+See also:
+
+- [Docs Index](./docs/index.md)
+- [Declarative](./docs/declarative.md)
+- [Block](./docs/block.md)
+- [Node](./docs/node.md)
+- [Expressions and References](./docs/expressions.md)
 
 ## CLI
 
-PHCL includes a small compiler-style CLI.
-
-The workflow is file-oriented and intentionally simple:
+The CLI supports:
 
 - compile a single Python file into HCL output
 - walk a directory and compile each file independently
 - emit generated files next to sources, into another directory, or to stdout
 - infer output suffix from the source filename, or override it explicitly
 
-Each file is executed in isolation. If execution leaves materializable declarations in the registry, PHCL emits one output file for that source file. This keeps the model closer to HCL's "many independent files" workflow than to a traditional Python application with a single entrypoint.
+This makes PHCL easy to adopt incrementally:
+
+- generate one file beside existing HCL
+- generate one subtree into a separate output directory
+- generate an entire repository in place
+- generate an entire repository into another target tree
+
+See also:
+
+- [CLI Docs](./docs/cli.md)
 
 ## Installation
 
