@@ -61,9 +61,10 @@ def test_compile_file_writes_rendered_output(tmp_path):
     source = write_file(
         tmp_path / "service.tf.py",
         """
-from phcl.terraform import Resource
+from phcl.core.nodes import Node
 
-class Web(Resource["aws_instance"]):
+class Web(Node):
+    _phcl_kind = "service"
     instance_type = "t3.micro"
 """.strip()
         + "\n",
@@ -80,7 +81,7 @@ class Web(Resource["aws_instance"]):
     assert result.status == "write"
     assert result.output == tmp_path / "out" / "service.tf"
     assert result.output.read_text(encoding="utf-8") == (
-        'resource "aws_instance" "web" {\n'
+        'service "web" {\n'
         '  instance_type = "t3.micro"\n'
         '}\n'
     )
@@ -109,9 +110,10 @@ def test_compile_file_fails_when_extension_cannot_be_inferred(tmp_path):
     source = write_file(
         tmp_path / "service.py",
         """
-from phcl.terraform import Resource
+from phcl.core.nodes import Node
 
-class Web(Resource["aws_instance"]):
+class Web(Node):
+    _phcl_kind = "service"
     instance_type = "t3.micro"
 """.strip()
         + "\n",
