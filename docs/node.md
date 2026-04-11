@@ -1,0 +1,99 @@
+# Node
+
+`Node` is PHCL's top-level declaration type.
+
+`Block` models generic HCL structure. `Node` adds PHCL-specific top-level behavior.
+
+## What `Node` Adds
+
+Compared to `Block`, `Node` adds:
+
+- top-level declaration semantics
+- registry participation
+- logical naming
+- automatic default kind for direct subclasses
+- reference entrypoint through `._`
+
+## Top-Level Declaration
+
+```python
+from phcl import Node
+
+
+class Service(Node):
+    enabled = True
+```
+
+This renders as:
+
+```hcl
+service "service" {
+  enabled = true
+}
+```
+
+Rules:
+
+- direct subclasses of `Node` derive their block kind from the class name by default
+- the final top-level label is derived from the class name
+
+## Relationship to `Block`
+
+`Node` still uses the same body model as `Block`.
+
+That means a node can contain:
+
+- plain attributes
+- nested `Block(...)` values
+- repeated nested blocks
+
+Example:
+
+```python
+from phcl import Block, Node
+
+
+class Service(Node):
+    config = Block(path="/srv/app")
+```
+
+This renders as:
+
+```hcl
+service "service" {
+  config {
+    path = "/srv/app"
+  }
+}
+```
+
+## Registry
+
+Concrete `Node` subclasses are registered automatically.
+
+This is what lets PHCL compile a file without a separate main entrypoint:
+
+1. execute the file
+2. collect concrete `Node` subclasses
+3. render the registry
+
+## Abstract Nodes
+
+Base declarations that should not be emitted can be marked abstract:
+
+```python
+from phcl import Node, abstract
+
+
+@abstract
+class BaseService(Node):
+    pass
+```
+
+The abstract class itself is not registered, but concrete subclasses still can be.
+
+## References
+
+`Node` also provides the `._` entrypoint for reference-space.
+
+The mechanism itself belongs to the core. The concrete base path is defined by higher-level product layers.
