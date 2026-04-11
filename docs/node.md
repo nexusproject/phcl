@@ -4,6 +4,10 @@
 
 `Block` models generic HCL structure. `Node` adds PHCL-specific top-level behavior.
 
+In core PHCL, `Node` is primarily a declaration base.
+
+It is usually not the final user-facing abstraction in a product layer. Product-specific packages typically build more concrete node types on top of it, such as resource-like or provider-like declarations.
+
 ## What `Node` Adds
 
 Compared to `Block`, `Node` adds:
@@ -16,26 +20,41 @@ Compared to `Block`, `Node` adds:
 
 ## Top-Level Declaration
 
+`Node` is the core top-level declaration primitive.
+
+At this level, the important part is not a particular product-specific block type, but the top-level generation behavior that higher-level declaration types inherit.
+
 ```python
 from phcl import Node
 
 
 class Service(Node):
-    enabled = True
+    pass
 ```
 
 This renders as:
 
 ```hcl
-service "service" {
-  enabled = true
-}
+service "service" {}
 ```
 
 Rules:
 
 - direct subclasses of `Node` derive their block kind from the class name by default
-- the final top-level label is derived from the class name
+- the final top-level label is also derived from the class name
+
+This uses PHCL's normal class-to-label conversion.
+
+Example:
+
+- `Service` -> `service`
+- `WebAPI` -> `web_api`
+- `InstanceId` -> `instance_id`
+
+So:
+
+- the block kind for a direct `Node` subclass defaults from the class name
+- the generated top-level logical label also defaults from the class name
 
 ## Relationship to `Block`
 

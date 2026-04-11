@@ -59,8 +59,8 @@ The resulting declarative body is:
 
 Rules:
 
-- parent attributes are inherited
-- child attributes override parent attributes
+- a child declaration starts with the parent attributes
+- inherited attributes can be overridden locally in the child
 - subclasses extend an existing declaration instead of replacing it
 
 Changing the child does not mutate the parent declaration.
