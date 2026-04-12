@@ -7,9 +7,11 @@
 </h1>
 PHCL is a Python DSL that compiles to native HCL2 and enables dynamic infrastructure generation.
 
+Core layer for [phcl-terraform](https://github.com/nexusproject/phcl-terraform)
+
 ## Idea
 
-HCL is great for describing infrastructure, but not for generating it. As complexity grows, configuration turns into a combinatorial explosion and becomes hard to maintain.
+In Terraform, HCL is great for describing infrastructure, but not for generating it dynamically. As complexity grows, configuration turns into a combinatorial explosion and becomes hard to maintain.
 
 It also struggles when infrastructure depends on external data — YAML, JSON, databases, APIs — where data needs to be loaded, transformed, and combined before turning into resources.
 
