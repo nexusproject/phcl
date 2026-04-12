@@ -6,7 +6,14 @@
 
 In core PHCL, `Node` is primarily a declaration base.
 
-It is usually not the final user-facing abstraction in a product layer. Product-specific packages typically build more concrete node types on top of it, such as resource-like or provider-like declarations.
+It is usually not the final user-facing abstraction in a product layer.
+
+Product-specific packages typically build more concrete root node types on top of it, such as resource-like, provider-like, or output-like declarations.
+
+So the main role of `Node` is:
+
+- provide top-level generation behavior in the core
+- act as the base class from which product-specific root nodes are built
 
 ## What `Node` Adds
 
@@ -24,19 +31,36 @@ Compared to `Block`, `Node` adds:
 
 At this level, the important part is not a particular product-specific block type, but the top-level generation behavior that higher-level declaration types inherit.
 
+Typical usage is to define a product-specific root node type on top of `Node`:
+
 ```python
-from phcl import Node
+from phcl import Node, abstract
 
 
-class Service(Node):
+@abstract
+class Resource(Node):
     pass
+
+
+class MainResource(Resource):
+    image = "nginx"
 ```
 
-This renders as:
+Here:
+
+- `Node` provides the core top-level declaration behavior
+- `Resource` becomes a product-specific root node base
+- `MainResource` is a concrete declaration built on top of that base
+
+With the core defaults shown above, this renders as:
 
 ```hcl
-service "service" {}
+resource "main_resource" {
+  image = "nginx"
+}
 ```
+
+In real product layers, classes such as `Resource` usually define more semantics than this, but the inheritance pattern is the important part.
 
 Rules:
 
@@ -47,14 +71,16 @@ This uses PHCL's normal class-to-label conversion.
 
 Example:
 
-- `Service` -> `service`
+- `Resource` -> `resource`
+- `MainResource` -> `main_resource`
 - `WebAPI` -> `web_api`
 - `InstanceId` -> `instance_id`
 
 So:
 
 - the block kind for a direct `Node` subclass defaults from the class name
-- the generated top-level logical label also defaults from the class name
+- concrete subclasses inherit that kind unless a higher-level layer changes it
+- the generated top-level logical label defaults from the concrete class name
 
 ## Relationship to `Block`
 
@@ -66,25 +92,38 @@ That means a node can contain:
 - nested `Block(...)` values
 - repeated nested blocks
 
+It also inherits label support from `Block`, so product-specific root node types can use `[...]` as well.
+
 Example:
 
 ```python
-from phcl import Block, Node
+from phcl import Block, Node, abstract
 
 
-class Service(Node):
+@abstract
+class Resource(Node):
+    pass
+
+
+class MainService(Resource["web"]):
     config = Block(path="/srv/app")
 ```
 
 This renders as:
 
 ```hcl
-service "service" {
+resource "web" "main_service" {
   config {
     path = "/srv/app"
   }
 }
 ```
+
+Here:
+
+- `resource` comes from the direct `Node` subclass `Resource`
+- `"web"` comes from `Resource["web"]`
+- `"main_service"` comes from the concrete class name `MainService`
 
 ## Registry
 

@@ -12,7 +12,7 @@ Declarative
 
 - `Declarative` provides inheritance, merge, and override behavior
 - `Block` provides generic HCL block structure
-- `Node` provides top-level declaration behavior
+- `Node` provides top-level declaration behavior and serves as the base for product-specific root nodes
 
 ## Generation Cycle
 
@@ -44,7 +44,7 @@ So:
 
 In practical terms:
 
-- use `Node` for declarations that should be emitted as root blocks
+- use `Node` as the core base for declarations that should be emitted as root blocks
 - use `Block` for structural content inside those declarations
 
 Example:
