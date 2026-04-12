@@ -14,81 +14,31 @@ Declarative
 - `Block` provides generic HCL block structure
 - `Node` provides top-level declaration behavior and serves as the base for product-specific root nodes
 
-## Generation Cycle
+## HCL Generation
 
-PHCL compiles by executing Python source and collecting declarations.
-
-The cycle is:
+PHCL generates HCL from one PHCL source file at a time.
 
 1. execute a Python file
 2. collect concrete `Node` subclasses in the registry
-3. render each collected node as top-level output
+3. render each collected node into top-level output
 4. render any nested `Block(...)` values inside node bodies
 
-This makes `Node` descendants the root units of generation.
+Rules:
 
-That also means:
-
+- files are generation units
+- imports do not create additional output units
 - direct or indirect concrete `Node` subclasses can become generated top-level blocks
 - plain `Block` subclasses are not collected by the registry on their own
 - abstract declarations are skipped
-
-At the same time, `Node` still inherits from `Block`, so its body can contain nested blocks, repeated nested blocks, and plain attributes.
-
-So:
-
-- `Node` controls what enters the top-level output
+- `Node` controls what enters top-level output
 - `Block` controls structure inside generated bodies
 
-## Root and Nested Structure
+PHCL can compile:
 
-In practical terms:
-
-- use `Node` as the core base for declarations that should be emitted as root blocks
-- use `Block` for structural content inside those declarations
-
-Example:
-
-```python
-from phcl import Block, Node
-
-
-class Service(Node):
-    config = Block(path="/srv/app")
-```
-
-This produces a top-level node:
-
-```hcl
-service "service" {
-  config {
-    path = "/srv/app"
-  }
-}
-```
-
-Here:
-
-- `Service` is collected because it is a concrete `Node`
-- `config` is rendered because it is part of the node body
-- `config` is not independently registered as a root declaration
-
-## Adoption Depth
-
-PHCL does not require an all-or-nothing workflow.
-
-You can:
-
-- generate a single file
-- generate a subtree
-- generate a whole repository in place
-- generate into another output directory
-
-That makes it possible to adopt PHCL at whatever depth is useful:
-
-- as a small local authoring layer
-- as a partial replacement in an existing HCL repository
-- or as the main source format for a project
+- a single file
+- a directory subtree
+- a repository in place
+- a repository into another output directory
 
 ## Contents
 
