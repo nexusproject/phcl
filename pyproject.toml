@@ -9,7 +9,7 @@ description = "Python-powered structural DSL for authoring native HCL2."
 authors = [
     {name = "Dmitry Sergeev",email = "realnexusway@gmail.com"}
 ]
-license = {text = "MIT"}
+license = "MIT"
 readme = "README.md"
 requires-python = ">=3.9"
 dependencies = []
