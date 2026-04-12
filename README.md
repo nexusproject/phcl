@@ -1,5 +1,5 @@
 <h1>
-  <img src="assets/phcl-logo-dashed.svg" width="70" align="absmiddle"
+  <img src="https://raw.githubusercontent.com/nexusproject/phcl/main/assets/phcl-logo-dashed.svg" width="70" align="absmiddle"
        style="margin-right: 8px;">
   PHCL
   <img src="https://codecov.io/gh/nexusproject/phcl/branch/main/graph/badge.svg"
