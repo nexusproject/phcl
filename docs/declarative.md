@@ -114,6 +114,10 @@ This follows the same rule:
 - properties
 - nested classes
 
+Properties are evaluated against the current declaration instance.
+
+That means a property can compute derived declarative values from the local declaration context.
+
 `Declarative` ignores:
 
 - private names

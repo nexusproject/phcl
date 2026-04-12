@@ -31,7 +31,7 @@ def hcl(source: str) -> Expression:
     return Expression(source)
 
 
-class Reference:
+class Reference(Expression):
     """
     Lazy traversal object for building HCL expression paths.
 
@@ -39,10 +39,8 @@ class Reference:
     at which point it behaves like a plain raw HCL expression fragment.
     """
 
-    __slots__ = ("source",)
-
     def __init__(self, source: str):
-        self.source = source
+        super().__init__(source)
 
     def __getattr__(self, name: str):
         if name.startswith("_"):
@@ -52,23 +50,12 @@ class Reference:
     def __getitem__(self, key):
         if isinstance(key, Expression):
             rendered = key.source
-        elif isinstance(key, Reference):
-            rendered = key.source
         elif isinstance(key, str):
             escaped = key.replace("\\", "\\\\").replace('"', '\\"')
             rendered = f'"{escaped}"'
         else:
             rendered = str(key)
         return Reference(f"{self.source}[{rendered}]")
-
-    def hcl(self) -> Expression:
-        """
-        Convert a structured reference into an inline native HCL expression.
-        """
-        return Expression(self.source)
-
-    def __str__(self):
-        return self.source
 
     def __repr__(self):
         return f"Reference({self.source!r})"

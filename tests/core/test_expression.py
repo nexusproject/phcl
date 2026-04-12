@@ -28,6 +28,7 @@ def test_reference_supports_attribute_traversal():
     ref = Reference("aws_instance.web").id
 
     assert isinstance(ref, Reference)
+    assert isinstance(ref, Expression)
     assert str(ref) == "aws_instance.web.id"
 
 
@@ -44,14 +45,6 @@ def test_reference_supports_indexing_with_string_expression_and_reference():
     assert str(base["public"]) == 'module.network["public"]'
     assert str(base[hcl("var.key")]) == "module.network[var.key]"
     assert str(base[Reference("each.key")]) == "module.network[each.key]"
-
-
-def test_reference_hcl_returns_expression():
-    ref = Reference("data.aws_ami.ubuntu.id")
-    value = ref.hcl()
-
-    assert isinstance(value, Expression)
-    assert value.source == "data.aws_ami.ubuntu.id"
 
 
 def test_reference_repr_is_stable():

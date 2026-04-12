@@ -5,7 +5,7 @@ PHCL separates two different concepts:
 - raw HCL expressions
 - structured references
 
-They are related, but they are not the same thing.
+`Reference` is also an expression, but a more specific one: it represents traversal syntax built structurally rather than written as raw HCL text.
 
 ## Expression
 
@@ -51,9 +51,11 @@ hcl("jsonencode(local.config)")
 hcl("each.value.name")
 ```
 
+`hcl(...)` is the escape hatch back into native HCL.
+
 ## Reference
 
-`Reference` is a structured traversal builder.
+`Reference` is a structured traversal expression.
 
 It is used for paths such as:
 
@@ -63,7 +65,7 @@ module.network["public"].id
 each.value.name
 ```
 
-A `Reference` is still rendered as HCL syntax, but it is constructed through Python traversal operations rather than raw string injection.
+A `Reference` still renders as native HCL syntax, but it is constructed through Python traversal operations rather than raw string injection.
 
 Example:
 
@@ -79,6 +81,14 @@ Result:
 ```text
 aws_instance.web.id
 ```
+
+Equivalent raw HCL form:
+
+```python
+hcl("aws_instance.web.id")
+```
+
+The `Reference` form is usually preferred for traversal paths because it is structured and less stringly-typed.
 
 ### Traversal
 
@@ -97,14 +107,44 @@ Reference("module.network")[hcl("var.key")]
 
 ## Relationship Between `Expression` and `Reference`
 
-`Reference` can be converted into `Expression`:
+`Reference` is a specialized form of `Expression`.
+
+Use `Expression` through `hcl(...)` when you want to write native HCL syntax directly:
 
 ```python
-ref = Reference("aws_instance.web.id")
-value = ref.hcl()
+hcl("jsonencode(local.config)")
+hcl("a ? b : c")
 ```
 
-This is useful when a path must be treated as a raw expression value.
+Use `Reference` when the value is a traversal path that can be built structurally:
+
+```python
+Reference("aws_instance.web").id
+Reference("module.network")["public"].id
+```
+
+`Reference` already renders as native HCL traversal syntax:
+
+Example:
+
+```python
+Reference("aws_instance.web.id")
+```
+
+Result:
+
+```text
+aws_instance.web.id
+```
+
+## Boundary
+
+PHCL intentionally keeps a clean boundary here.
+
+- `Reference` covers structured traversal
+- `hcl(...)` covers native expression syntax
+
+PHCL does not try to replace the full HCL expression language with a parallel Python operator DSL.
 
 ## `Node._`
 
@@ -153,6 +193,22 @@ Example shape:
 ```python
 Instance._.id
 ```
+
+Practical example:
+
+```python
+class WebInstance(Node):
+    pass
+
+
+value = WebInstance._.id
+```
+
+This reads as:
+
+- `WebInstance` -> declaration
+- `WebInstance._` -> reference to the represented object
+- `WebInstance._.id` -> traversal on that reference
 
 This does not hardcode Terraform or any other product into the core.
 

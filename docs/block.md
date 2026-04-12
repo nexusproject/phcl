@@ -149,6 +149,14 @@ config = Block(port=8080, enabled=True)
 
 For plain Python literals, PHCL emits the corresponding HCL literal form.
 
+Value normalization follows the Python value shape:
+
+- `Mapping` -> HCL object-like value
+- `list` -> HCL list
+- generic `Iterable` -> materialized HCL list
+- `Block(...)` -> nested block
+- `list[Block(...)]` -> repeated nested blocks
+
 Constructor keyword arguments are not separate from the declarative model. They are instance-level attribute definitions.
 
 That means they can also override class-defined attributes:
