@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "phcl"
 version = "0.1.0"
-description = "Python-powered HCL DSL: write Terraform resources using clean Python classes"
+description = "Python-powered structural DSL for authoring native HCL2."
 authors = [
     {name = "Dmitry Sergeev",email = "realnexusway@gmail.com"}
 ]
