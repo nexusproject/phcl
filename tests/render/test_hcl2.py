@@ -1,6 +1,6 @@
 import pytest
 
-from phcl.core.expression import Reference, expr
+from phcl.core.expression import Reference, hcl
 from phcl.core.nodes import Block, Node
 from phcl.render.hcl2 import build_hcl, quote_string, render_block, render_value, walk_block
 
@@ -15,7 +15,7 @@ def test_render_value_supports_scalars_expressions_references_and_collections():
     assert render_value(False) == "false"
     assert render_value(42) == "42"
     assert render_value("hello") == '"hello"'
-    assert render_value(expr("var.region")) == "var.region"
+    assert render_value(hcl("var.region")) == "var.region"
     assert render_value(Reference("aws_instance.web.id")) == "aws_instance.web.id"
     assert render_value([]) == "[]"
     assert render_value({}) == "{}"
@@ -49,7 +49,7 @@ def test_render_block_renders_block_with_labels_attributes_and_nested_blocks():
     class Service(Node["api"]):
         _phcl_kind = "service"
         enabled = True
-        source = expr("var.source")
+        source = hcl("var.source")
         meta = {"team": "platform"}
         config = Block(path="/srv/app")
 

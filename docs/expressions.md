@@ -14,10 +14,10 @@ They are related, but they are not the same thing.
 Use it when the value should be emitted exactly as HCL syntax.
 
 ```python
-from phcl import expr
+from phcl import hcl
 
 
-value = expr("var.region")
+value = hcl("var.region")
 ```
 
 This renders as:
@@ -32,9 +32,9 @@ not:
 value = "var.region"
 ```
 
-### When to Use `expr(...)`
+### When to Use `hcl(...)`
 
-Use `expr(...)` when you want to keep native HCL syntax as-is.
+Use `hcl(...)` when you want to keep native HCL syntax as-is.
 
 Typical cases:
 
@@ -46,9 +46,9 @@ Typical cases:
 Examples:
 
 ```python
-expr("var.region")
-expr("jsonencode(local.config)")
-expr("each.value.name")
+hcl("var.region")
+hcl("jsonencode(local.config)")
+hcl("each.value.name")
 ```
 
 ## Reference
@@ -92,7 +92,7 @@ Index access also extends the path:
 
 ```python
 Reference("module.network")["public"]
-Reference("module.network")[expr("var.key")]
+Reference("module.network")[hcl("var.key")]
 ```
 
 ## Relationship Between `Expression` and `Reference`
@@ -101,7 +101,7 @@ Reference("module.network")[expr("var.key")]
 
 ```python
 ref = Reference("aws_instance.web.id")
-value = ref.expr()
+value = ref.hcl()
 ```
 
 This is useful when a path must be treated as a raw expression value.
@@ -175,4 +175,4 @@ Use plain Python values when you want plain HCL literals.
 
 Use `Reference` when you want to build a path structurally.
 
-Use `expr(...)` when you want to inject raw HCL syntax directly.
+Use `hcl(...)` when you want to inject raw HCL syntax directly.

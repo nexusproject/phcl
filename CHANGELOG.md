@@ -4,6 +4,6 @@
 
 - Initial PHCL core release
 - Added native HCL2 renderer
-- Added `expr(...)`, `Reference`, `abstract`, and `generate`
+- Added `hcl(...)`, `Reference`, `abstract`, and `generate`
 - Added `phcl build` CLI
 - Added core test suite

@@ -21,7 +21,13 @@ class Expression:
         raise TypeError("HCL Expression cannot be used in Python boolean context")
 
 
-def expr(source: str) -> Expression:
+def hcl(source: str) -> Expression:
+    """
+    Wrap an inline native HCL expression.
+
+    Use this as an escape hatch when a value should be emitted as HCL syntax
+    exactly as written, rather than rendered from normal Python data.
+    """
     return Expression(source)
 
 
@@ -55,7 +61,10 @@ class Reference:
             rendered = str(key)
         return Reference(f"{self.source}[{rendered}]")
 
-    def expr(self) -> Expression:
+    def hcl(self) -> Expression:
+        """
+        Convert a structured reference into an inline native HCL expression.
+        """
         return Expression(self.source)
 
     def __str__(self):

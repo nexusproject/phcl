@@ -1,10 +1,10 @@
 import pytest
 
-from phcl.core.expression import Expression, Reference, expr
+from phcl.core.expression import Expression, Reference, hcl
 
 
-def test_expr_wraps_and_strips_source():
-    value = expr("  aws_instance.web.id  ")
+def test_hcl_wraps_and_strips_source():
+    value = hcl("  aws_instance.web.id  ")
 
     assert isinstance(value, Expression)
     assert value.source == "aws_instance.web.id"
@@ -18,7 +18,7 @@ def test_expression_repr_is_stable():
 
 
 def test_expression_cannot_be_used_in_boolean_context():
-    value = expr("var.enabled")
+    value = hcl("var.enabled")
 
     with pytest.raises(TypeError, match="boolean context"):
         bool(value)
@@ -42,13 +42,13 @@ def test_reference_supports_indexing_with_string_expression_and_reference():
     base = Reference("module.network")
 
     assert str(base["public"]) == 'module.network["public"]'
-    assert str(base[expr("var.key")]) == "module.network[var.key]"
+    assert str(base[hcl("var.key")]) == "module.network[var.key]"
     assert str(base[Reference("each.key")]) == "module.network[each.key]"
 
 
-def test_reference_expr_returns_expression():
+def test_reference_hcl_returns_expression():
     ref = Reference("data.aws_ami.ubuntu.id")
-    value = ref.expr()
+    value = ref.hcl()
 
     assert isinstance(value, Expression)
     assert value.source == "data.aws_ami.ubuntu.id"
