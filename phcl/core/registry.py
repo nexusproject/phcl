@@ -1,9 +1,10 @@
 class Registry:
     """
-    Global registry for concrete top-level declarations.
+    Global registry for top-level declaration classes.
 
-    The core DSL itself is structure-oriented; this helper is responsible for
-    collecting classes that should be emitted by higher-level integrations.
+    The registry intentionally stores all discovered declaration classes.
+    Higher-level integrations can then ask for narrower views such as only
+    concrete renderables.
     """
 
     _phcl_registry = []
@@ -13,8 +14,16 @@ class Registry:
         cls._phcl_registry.append(node_cls)
 
     @classmethod
-    def renderables(cls):
+    def all(cls):
         return list(cls._phcl_registry)
+
+    @classmethod
+    def renderables(cls):
+        return [
+            node_cls
+            for node_cls in cls._phcl_registry
+            if not node_cls.__dict__.get("_phcl_abstract", False)
+        ]
 
     @classmethod
     def render(cls):

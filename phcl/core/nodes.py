@@ -139,12 +139,11 @@ class Node(Block):
         if cls is not Node and Node in cls.__bases__ and "_phcl_kind" not in cls.__dict__:
             cls._phcl_kind = class_to_label(cls.__name__)
 
-        if cls.__dict__.get("_phcl_abstract", False):
-            return
-
         if cls is Node:
             return
 
+        # Direct children of Node are language/product roots, not project
+        # declarations. Concrete project declarations start one level deeper.
         if Node in cls.__bases__:
             return
 

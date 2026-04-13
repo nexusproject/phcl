@@ -56,6 +56,7 @@ def test_node_direct_subclass_gets_kind_from_class_name_and_is_not_registered():
         pass
 
     assert Service._phcl_kind == "service"
+    assert Registry.all() == []
     assert Registry.renderables() == []
 
 
@@ -69,6 +70,7 @@ def test_grandchildren_and_deeper_descendants_of_node_are_registered():
     class Web(Api):
         pass
 
+    assert Registry.all() == [Api, Web]
     assert Registry.renderables() == [Api, Web]
 
 
@@ -80,6 +82,7 @@ def test_abstract_node_is_not_registered_but_concrete_child_is():
     class Concrete(Base):
         pass
 
+    assert Base not in Registry.all()
     assert Base not in Registry.renderables()
     assert Concrete in Registry.renderables()
 
