@@ -55,7 +55,7 @@ class Block(Declarative):
             labels = (labels,)
 
         return type(
-            f"{cls.__name__}__" + "_".join(labels),
+            f"{cls.__name__}__" + "__".join(labels),
             (cls,),
             {
                 "_phcl_label": labels,

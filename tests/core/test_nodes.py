@@ -26,6 +26,13 @@ def test_block_class_getitem_sets_labels_and_marks_variant_abstract():
     assert ApiBlock.__dict__["_phcl_abstract"] is True
 
 
+def test_block_label_chains_and_tuple_labels_generate_the_same_class_name():
+    Chained = Block["api"]["v1"]
+    Packed = Block["api", "v1"]
+
+    assert Chained.__name__ == Packed.__name__
+
+
 def test_block_rejects_private_constructor_attributes():
     with pytest.raises(ValueError, match="reserved"):
         Block(_secret="nope")
