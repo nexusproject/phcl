@@ -86,7 +86,7 @@ uv sync
 To install the Terraform dialect layer together with PHCL:
 
 ```bash
-pip install "phcl[terraform]"
+pip install phcl
 ```
 
 Then:

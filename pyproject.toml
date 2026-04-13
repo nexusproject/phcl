@@ -14,9 +14,6 @@ readme = "README.md"
 requires-python = ">=3.9"
 dependencies = []
 
-[project.optional-dependencies]
-terraform = ["phcl-terraform"]
-
 [tool.setuptools.packages.find]
 include = ["phcl*"]
 
