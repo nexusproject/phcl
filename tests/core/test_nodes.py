@@ -51,12 +51,25 @@ def test_block_spec_includes_class_name_label_and_nested_values():
     }
 
 
-def test_node_direct_subclass_gets_kind_from_class_name_and_registers():
+def test_node_direct_subclass_gets_kind_from_class_name_and_is_not_registered():
     class Service(Node):
         pass
 
     assert Service._phcl_kind == "service"
-    assert Registry.renderables() == [Service]
+    assert Registry.renderables() == []
+
+
+def test_grandchildren_and_deeper_descendants_of_node_are_registered():
+    class Service(Node):
+        pass
+
+    class Api(Service):
+        pass
+
+    class Web(Api):
+        pass
+
+    assert Registry.renderables() == [Api, Web]
 
 
 def test_abstract_node_is_not_registered_but_concrete_child_is():

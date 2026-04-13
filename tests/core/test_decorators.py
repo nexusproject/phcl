@@ -16,7 +16,7 @@ def test_abstract_marks_class_and_removes_it_from_registry():
     class Service(Node):
         pass
 
-    assert Service in Registry.renderables()
+    assert Service not in Registry.renderables()
 
     Service = abstract(Service)
 

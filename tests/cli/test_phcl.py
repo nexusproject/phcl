@@ -63,7 +63,10 @@ def test_compile_file_writes_rendered_output(tmp_path):
         """
 from phcl.core.nodes import Node
 
-class Web(Node):
+class Service(Node):
+    _phcl_kind = "service"
+
+class Web(Service):
     _phcl_kind = "service"
     instance_type = "t3.micro"
 """.strip()
@@ -112,7 +115,10 @@ def test_compile_file_fails_when_extension_cannot_be_inferred(tmp_path):
         """
 from phcl.core.nodes import Node
 
-class Web(Node):
+class Service(Node):
+    _phcl_kind = "service"
+
+class Web(Service):
     _phcl_kind = "service"
     instance_type = "t3.micro"
 """.strip()

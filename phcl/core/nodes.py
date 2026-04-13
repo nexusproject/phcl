@@ -145,4 +145,7 @@ class Node(Block):
         if cls is Node:
             return
 
+        if Node in cls.__bases__:
+            return
+
         Registry.add(cls)
