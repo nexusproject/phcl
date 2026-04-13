@@ -19,33 +19,29 @@ PHCL moves generation, composition, and data processing into Python while keepin
 
 ## Architecture
 
-This repository contains the PHCL core.
+PHCL is built around a small declarative core that treats Python classes as reusable HCL declaration shapes.
 
-Product-specific layers are expected to live above it in separate packages.
+- `Classes as declarations` — class bodies describe HCL structures directly instead of building an intermediate runtime config format.
+- `Inheritance as refinement` — subclasses extend and override existing declaration shapes, making reuse and specialization native to the model.
+- `Registry and rendering` — concrete top-level declarations are collected and emitted as plain HCL2.
+- `Shared core, thin dialects` — Terraform-, Packer-, and other HCL2-oriented layers can stay thin on top of the same PHCL foundation.
 
-PHCL is split into three parts:
+For example, instead of writing Terraform like this:
 
-- `core` — declarative model
-- `render` — HCL2 generation
-- `cli` — compiles source files and writes output
+```hcl
+resource "aws_instance" "web" {
+  ami           = "ami-123"
+  instance_type = "t3.small"
+}
+```
 
-Generation cycle:
+PHCL aims to let you express the same declaration shape like this:
 
-1. execute a PHCL source file
-2. collect concrete `Node` subclasses in the registry
-3. render them as top-level output
-4. render nested `Block(...)` values as part of node bodies
-
-- `Node` descendants are the root units of generation
-- plain `Block` values are structural content, not top-level declarations
-- abstract declarations are skipped
-
-Boundaries:
-
-- Python handles declaration, reuse, generation, and transformation
-- HCL remains the output format
-- HCL expressions stay native when needed
-- product-specific semantics live above the core DSL
+```python
+class Web(Resource["aws_instance"]):
+    ami = "ami-123"
+    instance_type = "t3.small"
+```
 
 See also:
 
