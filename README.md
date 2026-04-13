@@ -7,8 +7,6 @@
 </h1>
 PHCL is a Python DSL that compiles to native HCL2 and enables dynamic infrastructure generation.
 
-Core layer for [phcl-terraform](https://github.com/nexusproject/phcl-terraform)
-
 ## Idea
 
 In Terraform, HCL is great for describing infrastructure, but not for generating it dynamically. As complexity grows, configuration turns into a combinatorial explosion and becomes hard to maintain.
@@ -85,8 +83,14 @@ or:
 uv sync
 ```
 
+To install the Terraform dialect layer together with PHCL:
+
+```bash
+pip install "phcl[terraform]"
+```
+
 Then:
 
 ```bash
-phcl build test.py --ext .tf
+phcl build test.tf.py
 ```
