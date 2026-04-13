@@ -7,7 +7,7 @@ It gives the DSL one important property:
 - class attributes participate in a declarative body
 - subclasses extend that body
 - subclasses can override inherited values
-- instance attributes are merged on top
+- instance attributes can be merged on top as a local overlay
 
 This lets Python classes behave like reusable configuration declarations rather than ordinary stateful objects.
 
@@ -27,7 +27,7 @@ Classes provide exactly that in a natural way, which makes them a good fit for d
 `Declarative` has two override layers:
 
 - subclass over base class
-- instance over class
+- instance over class as a local variation
 
 ### Subclass Override
 
@@ -75,7 +75,7 @@ This is the basis for abstract reusable building blocks in PHCL.
 
 ### Instance Override
 
-Instance attributes are merged on top of class attributes.
+Instance attributes are merged on top of class attributes as a local overlay.
 
 ```python
 from phcl.core.declarative import Declarative
@@ -86,12 +86,23 @@ class Config(Declarative):
     enabled = True
 
 
-cfg = Config()
-cfg.enabled = False
-cfg.name = "api"
+default_cfg = Config()
+
+api_cfg = Config()
+api_cfg.enabled = False
+api_cfg.name = "api"
 ```
 
-Result:
+Here the class still defines the shared declaration shape:
+
+```python
+{
+    "region": "us-east-1",
+    "enabled": True,
+}
+```
+
+And the instance adds a local variation on top:
 
 ```python
 {
@@ -104,7 +115,7 @@ Result:
 This follows the same rule:
 
 - the class declaration stays unchanged
-- the instance can extend or override its resulting body
+- the instance provides a local variation of the resulting body
 
 ## Included and Ignored Members
 
@@ -116,7 +127,7 @@ This follows the same rule:
 
 Properties are evaluated against the current declaration instance.
 
-That means a property can compute derived declarative values from the local declaration context.
+That means a property can compute derived declarative values from the local declaration context, including any instance-level overlay.
 
 `Declarative` ignores:
 

@@ -127,13 +127,13 @@ Here:
 
 ## Registry
 
-Concrete `Node` subclasses are registered automatically.
+Project declaration classes are registered automatically.
 
 This is what lets PHCL compile a file without a separate main entrypoint:
 
 1. execute the file
-2. collect concrete `Node` subclasses
-3. render the registry
+2. collect declaration classes through the registry
+3. render the concrete subset
 
 ## Abstract Nodes
 
@@ -148,7 +148,7 @@ class BaseService(Node):
     pass
 ```
 
-The abstract class itself is not registered, but concrete subclasses still can be.
+Abstract classes are skipped by renderable selection, while concrete subclasses can still become output declarations.
 
 ## References
 

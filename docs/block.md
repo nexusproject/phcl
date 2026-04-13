@@ -157,7 +157,7 @@ Value normalization follows the Python value shape:
 - `Block(...)` -> nested block
 - `list[Block(...)]` -> repeated nested blocks
 
-Constructor keyword arguments are not separate from the declarative model. They are instance-level attribute definitions.
+Constructor keyword arguments are not separate from the declarative model. They act as instance-level attribute definitions layered over the class-defined body.
 
 That means they can also override class-defined attributes:
 
@@ -184,7 +184,7 @@ So a block body can be defined in two ways:
 - through class attributes
 - through constructor keyword arguments
 
-And constructor keyword arguments can extend or override the inherited declarative body.
+And constructor keyword arguments can extend or override the inherited declarative body for that local block variation.
 
 ## Nested Blocks
 
