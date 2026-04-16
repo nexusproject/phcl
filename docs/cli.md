@@ -19,10 +19,13 @@ The CLI compiles by executing Python source files.
 For each file:
 
 1. the file is executed in isolation
-2. concrete `Node` subclasses are collected in the registry
-3. the registry is rendered into HCL output
+2. the module-level `PHCL` config is read
+3. concrete `Node` subclasses are collected in the registry
+4. the registry is rendered into HCL output
 
-If execution succeeds but the registry is empty, the file is skipped.
+If a file does not expose `PHCL`, it is skipped.
+
+If execution succeeds but the registry is empty, the file is also skipped.
 
 ## Targets
 
@@ -34,7 +37,7 @@ If execution succeeds but the registry is empty, the file is skipped.
 Single-file compilation:
 
 ```bash
-phcl build path/to/service.tf.py
+phcl build path/to/service.py
 ```
 
 Directory compilation:
@@ -56,7 +59,7 @@ By default, generated files are written next to the source file.
 Example:
 
 ```bash
-phcl build examples/aws.tf.py
+phcl build examples/aws.py
 ```
 
 This produces:
@@ -80,23 +83,45 @@ This preserves relative structure under the new root.
 For a single file, output can be written to standard output:
 
 ```bash
-phcl build examples/aws.tf.py --stdout
+phcl build examples/aws.py --stdout
 ```
 
 `--stdout` is only valid for a single file target.
 
-## Output Extension
+## File Configuration
 
-By default, PHCL infers the output extension from the source filename.
+Each renderable source file must expose a module-level `PHCL` object.
 
-Examples:
+Minimal example:
 
-```text
-main.tf.py      -> main.tf
-image.pkr.hcl.py -> image.pkr.hcl
+```python
+class PHCL:
+    extension = "tf"
 ```
 
-If the source filename does not contain an output extension, pass one explicitly:
+Supported fields today:
+
+- `extension` — output extension, for example `"tf"` or `".pkr.hcl"`; defaults to `".hcl"` when omitted
+- `skip` — skip compilation for this file when true
+- `indentation` — indentation string used by the HCL renderer, for example `" " * 4`
+
+Shared configuration can be imported and aliased:
+
+```python
+from config import GlobalSettings as PHCL
+```
+
+And locally refined through normal Python inheritance:
+
+```python
+from config import GlobalSettings
+
+
+class PHCL(GlobalSettings):
+    indentation = " " * 4
+```
+
+`--ext` remains available as a CLI override and takes precedence over `PHCL.extension`:
 
 ```bash
 phcl build service.py --ext .tf

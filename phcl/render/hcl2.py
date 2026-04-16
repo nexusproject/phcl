@@ -11,9 +11,6 @@ from phcl.core.expression import Expression, Reference
 from phcl.core.nodes import Block, Node, class_to_label
 
 
-INDENT = "  "
-
-
 def walk_block(block: Block):
     """
     Split a block body into scalar attributes and nested blocks.
@@ -53,7 +50,7 @@ def quote_string(value: str) -> str:
     return f'"{escaped}"'
 
 
-def render_value(value, level: int = 0) -> str:
+def render_value(value, level: int = 0, *, indent: str = "  ") -> str:
     """
     Render a Python value into HCL2 expression syntax.
 
@@ -95,15 +92,15 @@ def render_value(value, level: int = 0) -> str:
         lines = ["{"]
         for key, item in value.items():
             lines.append(
-                f"{INDENT * (level + 1)}{key} = {render_value(item, level + 1)}"
+                f"{indent * (level + 1)}{key} = {render_value(item, level + 1, indent=indent)}"
             )
-        lines.append(f"{INDENT * level}" + "}")
+        lines.append(f"{indent * level}" + "}")
         return "\n".join(lines)
 
     raise TypeError(f"Unsupported HCL value: {type(value)!r}")
 
 
-def render_block(block: Block, *, kind=None, level: int = 0) -> str:
+def render_block(block: Block, *, kind=None, level: int = 0, indent: str = "  ") -> str:
     """
     Render a single block and its body recursively.
 
@@ -120,31 +117,31 @@ def render_block(block: Block, *, kind=None, level: int = 0) -> str:
     header = " ".join([block_type] + [quote_string(label) for label in labels]) + " {"
 
     attrs, nested = walk_block(block)
-    lines = [f"{INDENT * level}{header}"]
+    lines = [f"{indent * level}{header}"]
 
     for name, value in attrs:
-        rendered = render_value(value, level + 1)
-        lines.append(f"{INDENT * (level + 1)}{name} = {rendered}")
+        rendered = render_value(value, level + 1, indent=indent)
+        lines.append(f"{indent * (level + 1)}{name} = {rendered}")
 
     # Insert a visual separator between simple attributes and nested blocks.
     if attrs and nested:
         lines.append("")
 
     for index, (name, child) in enumerate(nested):
-        lines.append(render_block(child, kind=name, level=level + 1))
+        lines.append(render_block(child, kind=name, level=level + 1, indent=indent))
         if index != len(nested) - 1:
             lines.append("")
 
-    lines.append(f"{INDENT * level}" + "}")
+    lines.append(f"{indent * level}" + "}")
     return "\n".join(lines)
 
 
-def build_hcl(registry: list[type]) -> str:
+def build_hcl(registry: list[type], *, indent: str = "  ") -> str:
     """
     Render a registry of concrete top-level declarations into HCL2 text.
 
     The input is a list of classes rather than instances, matching the current
     PHCL registry model where top-level declarations are collected as classes.
     """
-    rendered = [render_block(cls()) for cls in registry]
+    rendered = [render_block(cls(), indent=indent) for cls in registry]
     return "\n\n".join(rendered) + ("\n" if rendered else "")

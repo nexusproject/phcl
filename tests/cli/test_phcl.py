@@ -5,7 +5,8 @@ from phcl.cli.phcl import (
     command_build,
     compile_file,
     discover_python_files,
-    infer_output_extension,
+    load_file_config,
+    normalize_extension,
     output_path_for,
 )
 from phcl.core.registry import Registry
@@ -17,11 +18,27 @@ def write_file(path: Path, content: str) -> Path:
     return path
 
 
-def test_infer_output_extension_from_python_source_name():
-    assert infer_output_extension(Path("main.tf.py")) == ".tf"
-    assert infer_output_extension(Path("image.pkr.hcl.py")) == ".pkr.hcl"
-    assert infer_output_extension(Path("plain.py")) is None
-    assert infer_output_extension(Path("plain.tf")) is None
+def test_normalize_extension_adds_leading_dot():
+    assert normalize_extension("tf") == ".tf"
+    assert normalize_extension(".tf") == ".tf"
+
+
+def test_load_file_config_returns_none_when_phcl_is_missing():
+    assert load_file_config({}) is None
+
+
+def test_load_file_config_reads_extension_skip_and_indentation():
+    class PHCL:
+        extension = "tf"
+        skip = True
+        indentation = " " * 4
+
+    config = load_file_config({"PHCL": PHCL})
+
+    assert config is not None
+    assert config.extension == ".tf"
+    assert config.skip is True
+    assert config.indentation == " " * 4
 
 
 def test_discover_python_files_skips_pycache(tmp_path):
@@ -37,7 +54,7 @@ def test_discover_python_files_skips_pycache(tmp_path):
     ]
 
 
-def test_output_path_for_in_place_generation(tmp_path):
+def test_output_path_for_in_place_generation_uses_only_python_suffix(tmp_path):
     source = tmp_path / "examples" / "aws.tf.py"
     source.parent.mkdir(parents=True, exist_ok=True)
     source.touch()
@@ -48,26 +65,69 @@ def test_output_path_for_in_place_generation(tmp_path):
 
 
 def test_output_path_for_out_dir_mirrors_tree(tmp_path):
-    source = tmp_path / "examples" / "packer" / "image.pkr.hcl.py"
+    source = tmp_path / "examples" / "packer.config.py"
     source.parent.mkdir(parents=True, exist_ok=True)
     source.touch()
 
     output = output_path_for(source, tmp_path, tmp_path / "dist", ".pkr.hcl")
 
-    assert output == tmp_path / "dist" / "examples" / "packer" / "image.pkr.hcl"
+    assert output == tmp_path / "dist" / "examples" / "packer.config.pkr.hcl"
 
 
-def test_compile_file_writes_rendered_output(tmp_path):
+def test_compile_file_skips_when_phcl_config_is_missing(tmp_path):
     source = write_file(
-        tmp_path / "service.tf.py",
+        tmp_path / "helper.py",
+        "value = 42\n",
+    )
+
+    result = compile_file(
+        source,
+        base=tmp_path,
+        out_dir=None,
+        ext=".tf",
+        stdout=False,
+    )
+
+    assert result.status == "skip"
+    assert result.detail == "PHCL config is missing"
+
+
+def test_compile_file_skips_when_phcl_requests_skip(tmp_path):
+    source = write_file(
+        tmp_path / "service.py",
         """
+class PHCL:
+    extension = "tf"
+    skip = True
+""".strip()
+        + "\n",
+    )
+
+    result = compile_file(
+        source,
+        base=tmp_path,
+        out_dir=None,
+        ext=None,
+        stdout=False,
+    )
+
+    assert result.status == "skip"
+    assert result.detail == "PHCL.skip is true"
+
+
+def test_compile_file_writes_rendered_output_from_phcl_config(tmp_path):
+    source = write_file(
+        tmp_path / "service.py",
+        """
+class PHCL:
+    extension = "tf"
+
 from phcl.core.nodes import Node
 
 class Service(Node):
     _phcl_kind = "service"
 
 class Web(Service):
-    _phcl_kind = "service"
     instance_type = "t3.micro"
 """.strip()
         + "\n",
@@ -91,35 +151,26 @@ class Web(Service):
     assert Registry.renderables() == []
 
 
-def test_compile_file_skips_when_registry_is_empty(tmp_path):
-    source = write_file(
-        tmp_path / "helper.py",
-        "value = 42\n",
+def test_compile_file_supports_imported_global_phcl_config_and_local_render_options(tmp_path):
+    write_file(
+        tmp_path / "config.py",
+        """
+class GlobalSettings:
+    extension = "tf"
+    indentation = " " * 4
+""".strip()
+        + "\n",
     )
-
-    result = compile_file(
-        source,
-        base=tmp_path,
-        out_dir=None,
-        ext=".tf",
-        stdout=False,
-    )
-
-    assert result.status == "skip"
-    assert result.detail == "registry is empty"
-
-
-def test_compile_file_fails_when_extension_cannot_be_inferred(tmp_path):
     source = write_file(
         tmp_path / "service.py",
         """
+from config import GlobalSettings as PHCL
 from phcl.core.nodes import Node
 
 class Service(Node):
     _phcl_kind = "service"
 
 class Web(Service):
-    _phcl_kind = "service"
     instance_type = "t3.micro"
 """.strip()
         + "\n",
@@ -133,13 +184,127 @@ class Web(Service):
         stdout=False,
     )
 
-    assert result.status == "fail"
-    assert "cannot infer output extension" in result.detail
+    assert result.status == "write"
+    assert result.output == tmp_path / "service.tf"
+    assert result.output.read_text(encoding="utf-8") == (
+        'service "web" {\n'
+        '    instance_type = "t3.micro"\n'
+        '}\n'
+    )
+
+
+def test_compile_file_supports_local_phcl_inheritance_override(tmp_path):
+    write_file(
+        tmp_path / "config.py",
+        """
+class GlobalSettings:
+    extension = "tf"
+    indentation = " " * 2
+""".strip()
+        + "\n",
+    )
+    source = write_file(
+        tmp_path / "service.py",
+        """
+from config import GlobalSettings
+from phcl.core.nodes import Node
+
+class PHCL(GlobalSettings):
+    indentation = " " * 4
+
+class Service(Node):
+    _phcl_kind = "service"
+
+class Web(Service):
+    instance_type = "t3.micro"
+""".strip()
+        + "\n",
+    )
+
+    result = compile_file(
+        source,
+        base=tmp_path,
+        out_dir=None,
+        ext=None,
+        stdout=False,
+    )
+
+    assert result.status == "write"
+    assert result.output.read_text(encoding="utf-8") == (
+        'service "web" {\n'
+        '    instance_type = "t3.micro"\n'
+        '}\n'
+    )
+
+
+def test_compile_file_falls_back_to_cli_extension_override(tmp_path):
+    source = write_file(
+        tmp_path / "service.py",
+        """
+class PHCL:
+    indentation = " " * 2
+
+from phcl.core.nodes import Node
+
+class Service(Node):
+    _phcl_kind = "service"
+
+class Web(Service):
+    instance_type = "t3.micro"
+""".strip()
+        + "\n",
+    )
+
+    result = compile_file(
+        source,
+        base=tmp_path,
+        out_dir=None,
+        ext=".tf",
+        stdout=False,
+    )
+
+    assert result.status == "write"
+    assert result.output == tmp_path / "service.tf"
+
+
+def test_compile_file_defaults_to_hcl_when_phcl_extension_is_missing(tmp_path):
+    source = write_file(
+        tmp_path / "service.py",
+        """
+class PHCL:
+    pass
+
+from phcl.core.nodes import Node
+
+class Service(Node):
+    _phcl_kind = "service"
+
+class Web(Service):
+    instance_type = "t3.micro"
+""".strip()
+        + "\n",
+    )
+
+    result = compile_file(
+        source,
+        base=tmp_path,
+        out_dir=None,
+        ext=None,
+        stdout=False,
+    )
+
+    assert result.status == "write"
+    assert result.output == tmp_path / "service.hcl"
+    assert result.output.read_text(encoding="utf-8") == (
+        'service "web" {\n'
+        '  instance_type = "t3.micro"\n'
+        '}\n'
+    )
 
 
 def test_compile_file_returns_fail_on_execution_error(tmp_path):
     source = write_file(
-        tmp_path / "broken.tf.py",
+        tmp_path / "broken.py",
         "raise RuntimeError('boom')\n",
     )
 
@@ -172,7 +337,7 @@ def test_command_build_rejects_stdout_for_directory(tmp_path, capsys):
 
 def test_command_build_reports_failures_in_stdout_mode(tmp_path, capsys):
     source = write_file(
-        tmp_path / "broken.tf.py",
+        tmp_path / "broken.py",
         "raise RuntimeError('boom')\n",
     )
 

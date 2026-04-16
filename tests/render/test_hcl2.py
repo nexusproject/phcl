@@ -102,3 +102,19 @@ def test_build_hcl_renders_multiple_registered_classes_with_spacing():
 
 def test_build_hcl_returns_empty_string_for_empty_registry():
     assert build_hcl([]) == ""
+
+
+def test_build_hcl_supports_custom_indentation():
+    class Service(Node):
+        _phcl_kind = "service"
+        meta = {"team": "platform"}
+
+    rendered = build_hcl([Service], indent=" " * 4)
+
+    assert rendered == (
+        'service "service" {\n'
+        '    meta = {\n'
+        '        team = "platform"\n'
+        '    }\n'
+        '}\n'
+    )
