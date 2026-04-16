@@ -5,7 +5,7 @@ import sys
 from contextlib import redirect_stderr, redirect_stdout
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 from phcl.core.registry import Registry
 from phcl.render.hcl2 import build_hcl
@@ -19,13 +19,11 @@ class BuildResult:
     detail: str = ""
 
 
-def infer_output_extension(source: Path) -> Optional[str]:
-    suffixes = source.suffixes
-    if not suffixes or suffixes[-1] != ".py":
-        return None
-
-    inferred = "".join(suffixes[:-1])
-    return inferred or None
+@dataclass(frozen=True)
+class FileConfig:
+    extension: Optional[str]
+    indentation: str = "  "
+    skip: bool = False
 
 
 def discover_python_files(target: Path) -> list[Path]:
@@ -40,17 +38,42 @@ def discover_python_files(target: Path) -> list[Path]:
     return files
 
 
+def normalize_extension(value: str) -> str:
+    return value if value.startswith(".") else f".{value}"
+
+
 def output_path_for(source: Path, base: Path, out_dir: Optional[Path], ext: str) -> Path:
     relative = source.relative_to(base)
     target = relative.with_suffix("")
+    output_name = target.name
 
-    while target.suffix:
-        target = target.with_suffix("")
+    if output_name.endswith(ext):
+        destination_name = output_name
+    else:
+        destination_name = f"{output_name}{ext}"
 
     if out_dir is None:
-        return source.parent / f"{target.name}{ext}"
+        return source.parent / destination_name
 
-    return out_dir / target.parent / f"{target.name}{ext}"
+    return out_dir / target.parent / destination_name
+
+
+def load_file_config(module_globals: dict[str, Any]) -> Optional[FileConfig]:
+    config = module_globals.get("PHCL")
+    if config is None:
+        return None
+
+    extension = getattr(config, "extension", None)
+    indentation = getattr(config, "indentation", "  ")
+    skip = getattr(config, "skip", False)
+
+    if extension is not None:
+        extension = normalize_extension(extension)
+
+    if not isinstance(indentation, str) or not indentation:
+        raise TypeError("PHCL.indentation must be a non-empty string")
+
+    return FileConfig(extension=extension, indentation=indentation, skip=bool(skip))
 
 
 def execute_file(source: Path, import_root: Path):
@@ -58,7 +81,7 @@ def execute_file(source: Path, import_root: Path):
     try:
         sys.path.insert(0, str(import_root))
         with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
-            runpy.run_path(str(source), run_name="__main__")
+            return runpy.run_path(str(source), run_name="__main__")
     finally:
         sys.path[:] = original_sys_path
 
@@ -69,27 +92,41 @@ def compile_file(source: Path, *, base: Path, out_dir: Optional[Path], ext: Opti
     import_root = base if base.is_dir() else source.parent
 
     try:
-        execute_file(source, import_root)
+        module_globals = execute_file(source, import_root)
     except Exception as exc:
         Registry.reset()
         return BuildResult(source=source, output=None, status="fail", detail=str(exc))
+
+    try:
+        file_config = load_file_config(module_globals)
+    except Exception as exc:
+        Registry.reset()
+        return BuildResult(source=source, output=None, status="fail", detail=str(exc))
+
+    if file_config is None:
+        Registry.reset()
+        return BuildResult(source=source, output=None, status="skip", detail="PHCL config is missing")
+
+    if file_config.skip:
+        Registry.reset()
+        return BuildResult(source=source, output=None, status="skip", detail="PHCL.skip is true")
 
     registry = Registry.renderables()
     if not registry:
         Registry.reset()
         return BuildResult(source=source, output=None, status="skip", detail="registry is empty")
 
-    output_ext = ext or infer_output_extension(source)
+    output_ext = normalize_extension(ext) if ext else file_config.extension
     if not output_ext:
         Registry.reset()
         return BuildResult(
             source=source,
             output=None,
             status="fail",
-            detail="cannot infer output extension; pass --ext explicitly",
+            detail="PHCL.extension is missing; pass --ext explicitly or define it in PHCL",
         )
 
-    rendered = build_hcl(registry)
+    rendered = build_hcl(registry, indent=file_config.indentation)
     Registry.reset()
 
     if stdout:

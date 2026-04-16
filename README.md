@@ -56,7 +56,7 @@ The CLI supports:
 - compile a single Python file into HCL output
 - walk a directory and compile each file independently
 - emit generated files next to sources, into another directory, or to stdout
-- infer output suffix from the source filename, or override it explicitly
+- read per-file output settings from a module-level `PHCL` config
 
 This makes PHCL easy to adopt incrementally:
 
@@ -92,5 +92,5 @@ pip install phcl
 Then:
 
 ```bash
-phcl build test.tf.py
+phcl build test.py
 ```
