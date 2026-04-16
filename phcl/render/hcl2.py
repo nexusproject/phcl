@@ -82,7 +82,7 @@ def render_value(value, level: int = 0, *, indent: str = "  ") -> str:
     if isinstance(value, list):
         if not value:
             return "[]"
-        rendered = ", ".join(render_value(item, level) for item in value)
+        rendered = ", ".join(render_value(item, level, indent=indent) for item in value)
         return f"[{rendered}]"
 
     if isinstance(value, dict):

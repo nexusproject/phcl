@@ -58,6 +58,16 @@ def test_block_spec_includes_class_name_label_and_nested_values():
     }
 
 
+def test_block_spec_materializes_generic_iterables_as_indexed_objects():
+    class Service(Block):
+        _phcl_kind = "service"
+        ports = ("http", "https")
+
+    spec = Service()._phcl_spec()
+
+    assert spec["attrs"]["ports"] == ["http", "https"]
+
+
 def test_node_direct_subclass_gets_kind_from_class_name_and_is_not_registered():
     class Service(Node):
         pass

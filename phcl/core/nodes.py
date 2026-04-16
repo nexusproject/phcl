@@ -69,16 +69,33 @@ class Block(Declarative):
                 raise ValueError("Attributes starting with '_' are reserved")
         self.__dict__.update(kwargs)
 
+    def _phcl_normalize_value(self, value):
+        if isinstance(value, Block):
+            return value
+
+        if isinstance(value, list):
+            return [self._phcl_normalize_value(item) for item in value]
+
+        if isinstance(value, Mapping):
+            return {
+                key: self._phcl_normalize_value(item)
+                for key, item in value.items()
+            }
+
+        if isinstance(value, Iterable) and not isinstance(value, (str, bytes)):
+            return [self._phcl_normalize_value(item) for item in value]
+
+        return value
+
     def _phcl_normalize_attr(self, name, value):
         """
         Hook for product-specific attribute normalization.
 
-        The core leaves attribute values unchanged by default. Higher-level
-        layers can override this to adapt special fields before rendering or
-        spec generation, for example converting Python iterables into a
-        product-specific HCL structure.
+        The core normalizes generic Python values into PHCL's structural value
+        model by default. Higher-level layers can override this to adapt
+        special fields before rendering or spec generation.
         """
-        return value
+        return self._phcl_normalize_value(value)
 
     def _phcl_spec(self) -> dict:
         def emit(v):
@@ -93,9 +110,6 @@ class Block(Declarative):
 
             if isinstance(v, Mapping):
                 return {k: emit(x) for k, x in v.items()}
-
-            if isinstance(v, Iterable) and not isinstance(v, (str, bytes)):
-                return [emit(x) for x in v]
 
             return v
 

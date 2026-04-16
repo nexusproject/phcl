@@ -34,6 +34,7 @@ def test_walk_block_splits_scalar_attributes_and_nested_blocks():
         enabled = True
         config = Block(value="x")
         tags = ["a", "b"]
+        ports = ("http", "https")
         ingress = [Block(port=80), Block(port=443)]
 
     attrs, nested = walk_block(Service())
@@ -41,6 +42,7 @@ def test_walk_block_splits_scalar_attributes_and_nested_blocks():
     assert attrs == [
         ("enabled", True),
         ("tags", ["a", "b"]),
+        ("ports", ["http", "https"]),
     ]
     assert [name for name, _ in nested] == ["config", "ingress", "ingress"]
 
