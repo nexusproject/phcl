@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.1.1 - 2026-04-16
+
+- Added module-level `PHCL` file configuration for compile targets
+- Defaulted output extension to `.hcl` when `PHCL.extension` is omitted
+- Moved generic value normalization into `Block`
+- Added `terraform` optional dependency for installing the Terraform dialect as `phcl[terraform]`
+- Updated documentation for the new CLI and installation surface
+
 ## v0.1.0 - 2026-04-11
 
 - Initial PHCL core release
