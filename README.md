@@ -77,23 +77,17 @@ See also:
 The package exposes a `phcl` CLI entrypoint:
 
 ```bash
-pip install .
-```
-
-or:
-
-```bash
-uv sync
+pip install phcl
 ```
 
 To install the Terraform dialect layer together with PHCL:
 
 ```bash
-pip install phcl
+pip install 'phcl[terraform]'
 ```
 
 Then:
 
 ```bash
-phcl build test.py
+phcl build <target>
 ```
