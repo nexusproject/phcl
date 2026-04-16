@@ -267,7 +267,7 @@ class Web(Service):
     assert result.output == tmp_path / "service.tf"
 
 
-def test_compile_file_fails_when_phcl_extension_is_missing_and_no_cli_override(tmp_path):
+def test_compile_file_defaults_to_hcl_when_phcl_extension_is_missing(tmp_path):
     source = write_file(
         tmp_path / "service.py",
         """
@@ -293,8 +293,13 @@ class Web(Service):
         stdout=False,
     )
 
-    assert result.status == "fail"
-    assert "PHCL.extension is missing" in result.detail
+    assert result.status == "write"
+    assert result.output == tmp_path / "service.hcl"
+    assert result.output.read_text(encoding="utf-8") == (
+        'service "web" {\n'
+        '  instance_type = "t3.micro"\n'
+        '}\n'
+    )
 
 
 def test_compile_file_returns_fail_on_execution_error(tmp_path):

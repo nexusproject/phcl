@@ -101,7 +101,7 @@ class PHCL:
 
 Supported fields today:
 
-- `extension` — output extension, for example `"tf"` or `".pkr.hcl"`
+- `extension` — output extension, for example `"tf"` or `".pkr.hcl"`; defaults to `".hcl"` when omitted
 - `skip` — skip compilation for this file when true
 - `indentation` — indentation string used by the HCL renderer, for example `" " * 4`
 
@@ -121,7 +121,7 @@ class PHCL(GlobalSettings):
     indentation = " " * 4
 ```
 
-`--ext` remains available as a CLI override if `PHCL.extension` is not set:
+`--ext` remains available as a CLI override and takes precedence over `PHCL.extension`:
 
 ```bash
 phcl build service.py --ext .tf

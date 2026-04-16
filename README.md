@@ -56,7 +56,7 @@ The CLI supports:
 - compile a single Python file into HCL output
 - walk a directory and compile each file independently
 - emit generated files next to sources, into another directory, or to stdout
-- read per-file output settings from a module-level `PHCL` config
+- read per-file output settings from a module-level `PHCL` config, defaulting output to `.hcl`
 
 This makes PHCL easy to adopt incrementally:
 

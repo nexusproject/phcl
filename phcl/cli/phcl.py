@@ -10,6 +10,8 @@ from typing import Any, Optional
 from phcl.core.registry import Registry
 from phcl.render.hcl2 import build_hcl
 
+DEFAULT_OUTPUT_EXTENSION = ".hcl"
+
 
 @dataclass
 class BuildResult:
@@ -116,15 +118,7 @@ def compile_file(source: Path, *, base: Path, out_dir: Optional[Path], ext: Opti
         Registry.reset()
         return BuildResult(source=source, output=None, status="skip", detail="registry is empty")
 
-    output_ext = normalize_extension(ext) if ext else file_config.extension
-    if not output_ext:
-        Registry.reset()
-        return BuildResult(
-            source=source,
-            output=None,
-            status="fail",
-            detail="PHCL.extension is missing; pass --ext explicitly or define it in PHCL",
-        )
+    output_ext = normalize_extension(ext) if ext else (file_config.extension or DEFAULT_OUTPUT_EXTENSION)
 
     rendered = build_hcl(registry, indent=file_config.indentation)
     Registry.reset()
