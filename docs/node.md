@@ -82,6 +82,17 @@ So:
 - concrete subclasses inherit that kind unless a higher-level layer changes it
 - the generated top-level logical label defaults from the concrete class name
 
+For product or dialect root classes, this means:
+
+- if the desired block kind already matches the canonical class name, it is fine to rely on the default
+- explicit `_phcl_kind` is only needed when the desired kind differs from that default
+
+Example:
+
+- `class Resource(Node)` can rely on the default kind `resource`
+- `class Data(Node)` can rely on the default kind `data`
+- `class Provider(Node)` can rely on the default kind `provider`
+
 ## Relationship to `Block`
 
 `Node` still uses the same body model as `Block`.
