@@ -83,6 +83,7 @@ So:
 - the block kind for a direct `Node` subclass defaults from the class name
 - concrete subclasses inherit that kind unless a higher-level layer changes it
 - the generated top-level logical label defaults from the concrete class name
+- `_phcl_kind` can still be set explicitly when a root declaration type needs to force a different kind
 
 For product or dialect root classes, this means:
 
