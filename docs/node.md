@@ -166,3 +166,7 @@ Abstract classes are skipped by renderable selection, while concrete subclasses 
 `Node` also provides the `._` entrypoint for reference-space.
 
 The mechanism itself belongs to the core. The concrete base path is defined by higher-level product layers.
+
+`._` remains the explicit reference form.
+
+Inside block and resource attribute values, PHCL may also coerce `Node` subclasses into reference form automatically during attribute normalization as a convenience.

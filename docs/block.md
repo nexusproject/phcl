@@ -157,6 +157,22 @@ Value normalization follows the Python value shape:
 - `Block(...)` -> nested block
 - `list[Block(...)]` -> repeated nested blocks
 
+Within block and resource attribute values, `Node` subclasses can also be coerced into reference-space automatically.
+
+That makes shorthand forms such as:
+
+```python
+depends_on = [HttpsListener]
+```
+
+possible in attribute space, while explicit forms such as:
+
+```python
+depends_on = [HttpsListener._]
+```
+
+remain valid.
+
 Constructor keyword arguments are not separate from the declarative model. They act as instance-level attribute definitions layered over the class-defined body.
 
 That means they can also override class-defined attributes:

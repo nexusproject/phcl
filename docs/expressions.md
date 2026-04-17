@@ -4,6 +4,7 @@ PHCL separates two different concepts:
 
 - raw HCL expressions
 - structured references
+- structural Python values lowered into HCL value space
 
 `Reference` is also an expression, but a more specific one: it represents traversal syntax built structurally rather than written as raw HCL text.
 
@@ -53,6 +54,31 @@ hcl("each.value.name")
 
 `hcl(...)` is the escape hatch back into native HCL.
 
+## Structural Value Casting
+
+PHCL can lower normal Python structures into HCL value space automatically inside attribute values.
+
+This includes:
+
+- `dict`
+- `list`
+- `tuple`
+- generic `Iterable` values such as generators
+
+Embedded `Expression` and `Reference` values are preserved during that lowering step.
+
+Example:
+
+```python
+config = {
+    "name": "api",
+    "image": hcl("var.app_image"),
+    "ports": (port for port in (8080, 8443)),
+}
+```
+
+PHCL also rejects cyclic Python container structures during normalization.
+
 ## Reference
 
 `Reference` is a structured traversal expression.
@@ -80,6 +106,27 @@ Result:
 
 ```text
 aws_instance.web.id
+```
+
+## `jsonencode(...)`
+
+PHCL provides a core `jsonencode(...)` helper for fields that still want a JSON string boundary even when the authoring side stays structural and Python-first.
+
+Example:
+
+```python
+from phcl import jsonencode
+
+
+container_definitions = jsonencode(
+    [
+        {
+            "name": "api",
+            "image": hcl("var.app_image"),
+            "ports": (port for port in (8080, 8443)),
+        }
+    ]
+)
 ```
 
 Equivalent raw HCL form:
@@ -224,6 +271,17 @@ So:
 - `Instance` -> declaration
 - `Instance._` -> reference to the represented object
 - `Instance._.id` -> traversal on that reference
+
+Inside block and resource attribute values, PHCL can also coerce `Node` subclasses into reference form automatically during attribute normalization.
+
+That means both of these can be valid in attribute space:
+
+```python
+depends_on = [HttpsListener]
+depends_on = [HttpsListener._]
+```
+
+The automatic form is only a convenience in attribute value space. It does not change the general meaning of `Node` as a declaration class elsewhere in PHCL.
 
 ## Rule of Thumb
 
