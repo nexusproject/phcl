@@ -1,7 +1,9 @@
 import argparse
 import io
+import os
 import runpy
 import sys
+import time
 from contextlib import redirect_stderr, redirect_stdout
 from dataclasses import dataclass
 from pathlib import Path
@@ -11,6 +13,62 @@ from phcl.core.registry import Registry
 from phcl.render.hcl2 import build_hcl
 
 DEFAULT_OUTPUT_EXTENSION = ".hcl"
+
+
+class Ansi:
+    reset = "\033[0m"
+    dim = "\033[2m"
+    bold = "\033[1m"
+    green = "\033[32m"
+    yellow = "\033[33m"
+    red = "\033[31m"
+    cyan = "\033[36m"
+
+
+NO_COLOR = False
+
+
+def use_color(stream) -> bool:
+    return bool(
+        not NO_COLOR
+        and getattr(stream, "isatty", lambda: False)()
+        and os.environ.get("NO_COLOR") is None
+        and os.environ.get("TERM") != "dumb"
+    )
+
+
+def paint(text: str, *styles: str, stream=None) -> str:
+    target = stream or sys.stdout
+    if not use_color(target):
+        return text
+    return f"{''.join(styles)}{text}{Ansi.reset}"
+
+
+def status_label(status: str, *, stream) -> str:
+    labels = {
+        "write": ("write", (Ansi.bold, Ansi.green)),
+        "skip": ("skip", (Ansi.bold, Ansi.yellow)),
+        "stdout": ("stdout", (Ansi.bold, Ansi.cyan)),
+        "fail": ("fail", (Ansi.bold, Ansi.red)),
+        "done": ("done", (Ansi.bold, Ansi.green)),
+    }
+    text, styles = labels.get(status, (status, (Ansi.bold,)))
+    return f"{paint(text, *styles, stream=stream):<14}"
+
+
+def heading(text: str, *, stream) -> str:
+    marker = paint("==>", Ansi.bold, Ansi.cyan, stream=stream)
+    return f"{marker} {paint(text, Ansi.bold, stream=stream)}"
+
+
+def status_word(status: str, *, stream) -> str:
+    words = {
+        "write": "write",
+        "skip": paint("skip", Ansi.dim, stream=stream),
+        "stdout": paint("stdout", Ansi.dim, stream=stream),
+        "fail": paint("fail", Ansi.red, stream=stream),
+    }
+    return words.get(status, paint(status, stream=stream))
 
 
 @dataclass
@@ -107,11 +165,11 @@ def compile_file(source: Path, *, base: Path, out_dir: Optional[Path], ext: Opti
 
     if file_config is None:
         Registry.reset()
-        return BuildResult(source=source, output=None, status="skip", detail="PHCL config is missing")
+        return BuildResult(source=source, output=None, status="ignore")
 
     if file_config.skip:
         Registry.reset()
-        return BuildResult(source=source, output=None, status="skip", detail="PHCL.skip is true")
+        return BuildResult(source=source, output=None, status="skip", detail="disabled")
 
     registry = Registry.renderables()
     if not registry:
@@ -138,27 +196,42 @@ def print_result(result: BuildResult, root: Path):
 
     if result.status == "write":
         output = result.output.relative_to(root) if result.output and result.output.is_relative_to(root) else result.output
-        print(f"write  {source} -> {output}")
+        arrow = paint("->", Ansi.dim, stream=sys.stdout)
+        print(f"  {status_word('write', stream=sys.stdout)} {source} {arrow} {output}")
     elif result.status == "skip":
-        print(f"skip   {source} ({result.detail})")
+        detail = paint(f"({result.detail})", Ansi.dim, stream=sys.stdout)
+        print(f"  {status_word('skip', stream=sys.stdout)} {source} {detail}")
     elif result.status == "stdout":
-        print(f"stdout {source}", file=sys.stderr)
+        print(f"  {status_word('stdout', stream=sys.stderr)} {source}", file=sys.stderr)
     else:
-        print(f"fail   {source} ({result.detail})", file=sys.stderr)
+        detail = paint(f"({result.detail})", Ansi.dim, stream=sys.stderr)
+        print(f"  {status_word('fail', stream=sys.stderr)} {source} {detail}", file=sys.stderr)
+
+
+def print_group_heading(label: str):
+    print(heading(label, stream=sys.stdout), flush=True)
 
 
 def command_build(args) -> int:
+    started_at = time.perf_counter()
     target = Path(args.target).resolve()
     if not target.exists():
-        print(f"fail   {target} (path does not exist)", file=sys.stderr)
+        detail = paint("(path does not exist)", Ansi.dim, stream=sys.stderr)
+        print(f"{heading('build failed', stream=sys.stderr)}", file=sys.stderr)
+        print(f"  {status_word('fail', stream=sys.stderr)}  {target} {detail}", file=sys.stderr)
         return 1
 
     if args.stdout and target.is_dir():
-        print("fail   --stdout can only be used with a single file target", file=sys.stderr)
+        print(f"{heading('build failed', stream=sys.stderr)}", file=sys.stderr)
+        print(f"  {status_word('fail', stream=sys.stderr)}  --stdout can only be used with a single file target", file=sys.stderr)
         return 1
 
     base = target if target.is_dir() else target.parent
     out_dir = Path(args.out_dir).resolve() if args.out_dir else None
+
+    if not args.stdout:
+        target_label = str(target.relative_to(Path.cwd())) if target.is_relative_to(Path.cwd()) else str(target)
+        print_group_heading(f"build {target_label}")
 
     results = []
     for source in discover_python_files(target):
@@ -170,18 +243,24 @@ def command_build(args) -> int:
             stdout=args.stdout,
         )
         results.append(result)
-        if args.stdout:
-            if result.status != "stdout":
-                print_result(result, Path.cwd())
-        else:
-            print_result(result, Path.cwd())
 
     written = sum(result.status == "write" for result in results)
     skipped = sum(result.status == "skip" for result in results)
     failed = sum(result.status == "fail" for result in results)
 
     if not args.stdout:
-        print(f"done   {written} written, {skipped} skipped, {failed} failed")
+        for result in results:
+            if result.status == "ignore":
+                continue
+            if args.quiet and result.status != "fail":
+                continue
+            print_result(result, Path.cwd())
+
+        elapsed = time.perf_counter() - started_at
+        summary = paint(f"{written} written, {skipped} skipped, {failed} failed", Ansi.dim, stream=sys.stdout)
+        print()
+        print(heading(f"done in {elapsed:.2f}s", stream=sys.stdout))
+        print(f"  {summary}")
 
     return 1 if failed else 0
 
@@ -195,14 +274,18 @@ def build_parser() -> argparse.ArgumentParser:
     build.add_argument("--out-dir", help="Write generated files into this directory")
     build.add_argument("--ext", help="Override output extension, for example .tf or .pkr.hcl")
     build.add_argument("--stdout", action="store_true", help="Write output to stdout instead of files")
+    build.add_argument("--no-color", action="store_true", help="Disable ANSI colors in CLI output")
+    build.add_argument("-q", "--quiet", action="store_true", help="Hide per-file write/skip output and show only failures plus summary")
     build.set_defaults(func=command_build)
 
     return parser
 
 
 def main(argv=None) -> int:
+    global NO_COLOR
     parser = build_parser()
     args = parser.parse_args(argv)
+    NO_COLOR = bool(getattr(args, "no_color", False))
 
     if not hasattr(args, "func"):
         parser.print_help()
