@@ -37,9 +37,9 @@ This allows PHCL to keep HCL-like structure while using Python for:
 The result is not an object wrapper around HCL.  
 It is Python used as a language for building declarations.
 
-At the same time, PHCL keeps declaration code highly recognizable to anyone familiar with HCL2.
-Blocks, attributes, references, and nested structure still read in a familiar way, so the transition feels unusually light.
-You gain Python's expressive power without giving up the visual shape of native HCL-style authoring.
+At the same time, PHCL keeps declaration code highly recognizable and as close as possible to native HCL2.
+Blocks, attributes, references, and nested structure still read in a familiar way.
+You gain Python's expressive power without giving up the familiar shape of HCL-style authoring.
 
 ## HCL Generation
 

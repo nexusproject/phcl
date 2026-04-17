@@ -15,6 +15,8 @@ It also struggles when infrastructure depends on external data — YAML, JSON, d
 
 PHCL moves generation, composition, and data processing into Python while keeping the output as clean, readable HCL2.
 
+At the same time, PHCL keeps declaration code highly recognizable and as close as possible to native HCL2: you gain Python's expressive power without giving up the familiar shape of HCL-style authoring.
+
 ## Architecture
 
 PHCL is built around a small declarative core that treats Python classes as reusable HCL declaration shapes.
