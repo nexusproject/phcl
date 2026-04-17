@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.1.2 - 2026-04-17
+
+- Improved CLI and build process
+- Added structural casting for Python values in PHCL attribute space
+- Added `jsonencode(...)` as a core expression helper
+- Added automatic `Node` reference coercion in block and resource attribute values
+
 ## v0.1.1 - 2026-04-16
 
 - Added module-level `PHCL` file configuration for compile targets
