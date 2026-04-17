@@ -122,3 +122,29 @@ def test_node_reference_entrypoint_raises_for_non_addressable_nodes():
 
     with pytest.raises(TypeError, match="not addressable"):
         _ = Service._
+
+
+def test_block_normalization_coerces_node_subclasses_to_references_in_attrs():
+    class Listener(Node):
+        @classmethod
+        def _phcl_reference_base(cls) -> str:
+            return "aws_lb_listener.https_listener"
+
+    class Service(Node):
+        @classmethod
+        def _phcl_reference_base(cls) -> str:
+            return "aws_ecs_service.api"
+
+    class Deployment(Service):
+        depends_on = [Listener]
+        wiring = {
+            "primary": Service,
+            "dependencies": (item for item in (Listener,)),
+        }
+
+    normalized_depends_on = Deployment()._phcl_normalize_attr("depends_on", Deployment.depends_on)
+    normalized_wiring = Deployment()._phcl_normalize_attr("wiring", Deployment.wiring)
+
+    assert [item.source for item in normalized_depends_on] == [Listener._.source]
+    assert normalized_wiring["primary"].source == Service._.source
+    assert [item.source for item in normalized_wiring["dependencies"]] == [Listener._.source]
