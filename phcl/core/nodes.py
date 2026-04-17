@@ -71,7 +71,12 @@ class Block(Declarative):
         self.__dict__.update(kwargs)
 
     def _phcl_normalize_value(self, value):
-        return normalize_value(value, passthrough_types=(Block,))
+        def coerce(item):
+            if isinstance(item, type) and issubclass(item, Node):
+                return item._
+            return item
+
+        return normalize_value(value, passthrough_types=(Block,), coerce=coerce)
 
     def _phcl_normalize_attr(self, name, value):
         """
