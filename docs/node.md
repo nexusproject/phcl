@@ -34,10 +34,9 @@ At this level, the important part is not a particular product-specific block typ
 Typical usage is to define a product-specific root node type on top of `Node`:
 
 ```python
-from phcl import Node, abstract
+from phcl import Node
 
 
-@abstract
 class Resource(Node):
     pass
 
@@ -51,6 +50,9 @@ Here:
 - `Node` provides the core top-level declaration behavior
 - `Resource` becomes a product-specific root node base
 - `MainResource` is a concrete declaration built on top of that base
+
+`abstract` is not required in this specific pattern because `Node` itself and its direct subclasses are not registered as renderable project declarations.
+Concrete project declarations begin one level deeper.
 
 With the core defaults shown above, this renders as:
 
@@ -108,10 +110,9 @@ It also inherits label support from `Block`, so product-specific root node types
 Example:
 
 ```python
-from phcl import Block, Node, abstract
+from phcl import Block, Node
 
 
-@abstract
 class Resource(Node):
     pass
 
@@ -139,6 +140,8 @@ Here:
 ## Registry
 
 Project declaration classes are registered automatically.
+
+`Node` itself and direct subclasses of `Node` are treated as root declaration types rather than concrete project declarations, so registration begins one level deeper.
 
 This is what lets PHCL compile a file without a separate main entrypoint:
 

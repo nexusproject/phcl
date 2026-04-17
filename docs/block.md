@@ -113,10 +113,12 @@ In practice, it is most useful for:
 
 `Block[...]` attaches labels to a block class.
 
+More precisely, it creates a new parameterized block class whose label tuple is fixed in the class definition.
+
 PHCL:
 
 ```python
-some = Block["network", "block"]()
+Block["network", "block"]
 ```
 
 Rendered in nested form as:
@@ -130,6 +132,7 @@ Here:
 
 - block type comes from the attribute name in the surrounding body
 - labels come from `Block[...]`
+- `Block[...]` returns a new parameterized block class, not an instance
 
 This corresponds to the `Identifier (StringLit|Identifier)*` part of the HCL block form: a block type followed by zero or more labels.
 
