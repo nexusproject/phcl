@@ -1,3 +1,6 @@
+from phcl.core.values import normalize_value
+
+
 class Expression:
     """
     Raw HCL expression fragment.
@@ -29,6 +32,49 @@ def hcl(source: str) -> Expression:
     exactly as written, rather than rendered from normal Python data.
     """
     return Expression(source)
+
+
+def quote_string(value: str) -> str:
+    escaped = value.replace("\\", "\\\\").replace('"', '\\"')
+    return f'"{escaped}"'
+
+
+def render_expression_value(value) -> str:
+    if isinstance(value, Expression):
+        return value.source
+
+    if value is None:
+        return "null"
+
+    if isinstance(value, bool):
+        return "true" if value else "false"
+
+    if isinstance(value, (int, float)):
+        return str(value)
+
+    if isinstance(value, str):
+        return quote_string(value)
+
+    if isinstance(value, list):
+        if not value:
+            return "[]"
+        return "[" + ", ".join(render_expression_value(item) for item in value) + "]"
+
+    if isinstance(value, dict):
+        if not value:
+            return "{}"
+        inner = ", ".join(
+            f"{key} = {render_expression_value(item)}"
+            for key, item in value.items()
+        )
+        return "{" + inner + "}"
+
+    raise TypeError(f"Unsupported expression value: {type(value)!r}")
+
+
+def jsonencode(value) -> Expression:
+    normalized = normalize_value(value, passthrough_types=(Expression,))
+    return Expression(f"jsonencode({render_expression_value(normalized)})")
 
 
 class Reference(Expression):
