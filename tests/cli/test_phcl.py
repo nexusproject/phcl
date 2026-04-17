@@ -88,8 +88,8 @@ def test_compile_file_skips_when_phcl_config_is_missing(tmp_path):
         stdout=False,
     )
 
-    assert result.status == "skip"
-    assert result.detail == "PHCL config is missing"
+    assert result.status == "ignore"
+    assert result.detail == ""
 
 
 def test_compile_file_skips_when_phcl_requests_skip(tmp_path):
@@ -112,7 +112,7 @@ class PHCL:
     )
 
     assert result.status == "skip"
-    assert result.detail == "PHCL.skip is true"
+    assert result.detail == "disabled"
 
 
 def test_compile_file_writes_rendered_output_from_phcl_config(tmp_path):

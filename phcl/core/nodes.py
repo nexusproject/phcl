@@ -1,10 +1,11 @@
-from collections.abc import Iterable, Mapping
+from collections.abc import Mapping
 from typing import Optional, Tuple
 import re
 
 from .declarative import Declarative
 from .expression import Reference
 from .registry import Registry
+from .values import normalize_value
 
 
 def class_to_label(name: str) -> str:
@@ -70,22 +71,7 @@ class Block(Declarative):
         self.__dict__.update(kwargs)
 
     def _phcl_normalize_value(self, value):
-        if isinstance(value, Block):
-            return value
-
-        if isinstance(value, list):
-            return [self._phcl_normalize_value(item) for item in value]
-
-        if isinstance(value, Mapping):
-            return {
-                key: self._phcl_normalize_value(item)
-                for key, item in value.items()
-            }
-
-        if isinstance(value, Iterable) and not isinstance(value, (str, bytes)):
-            return [self._phcl_normalize_value(item) for item in value]
-
-        return value
+        return normalize_value(value, passthrough_types=(Block,))
 
     def _phcl_normalize_attr(self, name, value):
         """

@@ -243,6 +243,8 @@ def command_build(args) -> int:
             stdout=args.stdout,
         )
         results.append(result)
+        if args.stdout and result.status == "fail":
+            print_result(result, Path.cwd())
 
     written = sum(result.status == "write" for result in results)
     skipped = sum(result.status == "skip" for result in results)
