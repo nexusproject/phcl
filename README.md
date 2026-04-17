@@ -36,9 +36,6 @@ resource "aws_instance" "web" {
 PHCL aims to let you express the same declaration shape like this:
 
 ```python
-from phcl.terraform import Resource, TerraformPHCL as PHCL
-
-
 class Web(Resource["aws_instance"]):
     ami = "ami-123"
     instance_type = "t3.small"
