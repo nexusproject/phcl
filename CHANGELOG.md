@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.2.2
+
+- Added PHCL version reporting in the CLI and core API
+- Added `_phcl_auto_label` for controlling automatic class-name labels during HCL rendering
+- Documented `class _(...)` as a local helper declaration pattern
+- Updated `phcl[terraform]` to require the compatible patched dialect release
+
 ## v0.2.1
 
 - Fixed module-aware compilation so imported declarations do not materialize into a sibling file's output just because they were loaded for `PHCL` config or shared references
