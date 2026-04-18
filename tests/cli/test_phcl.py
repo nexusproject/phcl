@@ -256,6 +256,55 @@ class Web(Service):
         '}\n'
     )
 
+
+def test_compile_file_does_not_render_imported_declarations_from_phcl_config_module(tmp_path):
+    package_dir = tmp_path / "infra"
+    write_file(
+        package_dir / "config.py",
+        """
+class PHCL:
+    extension = "tf"
+
+from phcl.core.nodes import Node
+
+class Thing(Node):
+    _phcl_kind = "thing"
+
+class Imported(Thing):
+    source = "config"
+""".strip()
+        + "\n",
+    )
+    source = write_file(
+        package_dir / "registry.py",
+        """
+from .config import PHCL
+from phcl.core.nodes import Node
+
+class Thing(Node):
+    _phcl_kind = "thing"
+
+class Local(Thing):
+    source = "registry"
+""".strip()
+        + "\n",
+    )
+
+    result = compile_file(
+        source,
+        base=package_dir,
+        out_dir=None,
+        ext=None,
+        stdout=False,
+    )
+
+    assert result.status == "write", result.detail
+    assert result.output.read_text(encoding="utf-8") == (
+        'thing "local" {\n'
+        '  source = "registry"\n'
+        '}\n'
+    )
+
 def test_compile_file_falls_back_to_cli_extension_override(tmp_path):
     source = write_file(
         tmp_path / "service.py",
