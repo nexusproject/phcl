@@ -138,6 +138,35 @@ Here:
 - `"web"` comes from `Resource["web"]`
 - `"main_service"` comes from the concrete class name `MainService`
 
+## Underscore Helper Classes
+
+`class _(...)` is also a valid PHCL authoring pattern for local helper declarations:
+
+```python
+from phcl.core import Node
+
+
+class Provider(Node["aws"]):
+    _phcl_kind = "provider"
+    _phcl_auto_label = False
+
+
+class _(Provider):
+    region = "us-east-1"
+```
+
+This can be useful when:
+
+- the declaration only matters locally inside the module
+- you do not want to keep a stable exported class name in the module namespace
+- you still want full class-body syntax instead of switching to a different helper API
+
+This is only an authoring convenience.
+
+It does not replace dialect-level rendering policy.
+
+If a declaration family should not derive labels from concrete class names, that should still be expressed structurally through mechanisms such as `_phcl_auto_label = False`.
+
 ## Registry
 
 Project declaration classes are registered automatically.
