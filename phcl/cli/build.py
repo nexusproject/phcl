@@ -49,15 +49,18 @@ def output_path_for(source: Path, base: Path, out_dir: Optional[Path], ext: str)
 
 def compile_file(source: Path, *, base: Path, out_dir: Optional[Path], ext: Optional[str], stdout: bool) -> BuildResult:
     Registry.reset()
+    current_module_name = None
 
     try:
         resolved = resolve_module_target(source, base)
         if resolved is not None:
             import_root, module_name = resolved
+            current_module_name = module_name
             module_globals = execute_module(source, import_root, module_name)
         else:
             import_root = base if base.is_dir() else source.parent
             module_globals = execute_file(source, import_root)
+            current_module_name = module_globals.get("__name__")
     except Exception as exc:
         Registry.reset()
         return BuildResult(source=source, output=None, status="fail", detail=str(exc))
@@ -76,7 +79,7 @@ def compile_file(source: Path, *, base: Path, out_dir: Optional[Path], ext: Opti
         Registry.reset()
         return BuildResult(source=source, output=None, status="skip", detail="disabled")
 
-    registry = Registry.renderables()
+    registry = Registry.renderables(module_name=current_module_name)
     if not registry:
         Registry.reset()
         return BuildResult(source=source, output=None, status="skip", detail="registry is empty")

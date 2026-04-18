@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.2.1
+
+- Fixed module-aware compilation so imported declarations do not materialize into a sibling file's output just because they were loaded for `PHCL` config or shared references
+- Added a CLI regression test covering imported declaration leakage during per-file compilation
+
 ## v0.2.0
 
 - Split the public API into `phcl.core` and `phcl.syntax`
