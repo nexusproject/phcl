@@ -45,11 +45,12 @@ class Web(Resource["aws_instance"]):
 
 See also:
 
-- [Docs Index](./docs/index.md)
-- [Declarative](./docs/declarative.md)
-- [Block](./docs/block.md)
-- [Node](./docs/node.md)
-- [Expressions and References](./docs/expressions.md)
+- [Docs Index](https://github.com/nexusproject/phcl/blob/main/docs/index.md)
+- [Declarative](https://github.com/nexusproject/phcl/blob/main/docs/declarative.md)
+- [Block](https://github.com/nexusproject/phcl/blob/main/docs/block.md)
+- [Node](https://github.com/nexusproject/phcl/blob/main/docs/node.md)
+- [Syntax](https://github.com/nexusproject/phcl/blob/main/docs/syntax.md)
+- [Expressions and References](https://github.com/nexusproject/phcl/blob/main/docs/expressions.md)
 
 ## CLI
 
@@ -69,7 +70,7 @@ This makes PHCL easy to adopt incrementally:
 
 See also:
 
-- [CLI Docs](./docs/cli.md)
+- [CLI Docs](https://github.com/nexusproject/phcl/blob/main/docs/cli.md)
 
 ## Installation
 
