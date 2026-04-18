@@ -89,6 +89,23 @@ def test_render_block_can_disable_automatic_class_name_label_for_a_node_family()
     )
 
 
+def test_render_block_can_use_underscore_named_local_helper_class():
+    class ProviderLike(Node["aws"]):
+        _phcl_kind = "provider"
+        _phcl_auto_label = False
+
+    class _(ProviderLike):
+        region = "us-east-1"
+
+    rendered = render_block(_())
+
+    assert rendered == (
+        'provider "aws" {\n'
+        '  region = "us-east-1"\n'
+        "}"
+    )
+
+
 def test_render_block_preserves_explicit_labels_when_auto_label_is_disabled():
     class ProviderLike(Node["aws"]):
         _phcl_kind = "provider"
