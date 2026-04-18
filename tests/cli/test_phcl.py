@@ -9,6 +9,7 @@ from phcl.cli.phcl import (
     normalize_extension,
     output_path_for,
 )
+from phcl.core import Declarative
 from phcl.core.registry import Registry
 
 
@@ -32,6 +33,23 @@ def test_load_file_config_reads_extension_skip_and_indentation():
         extension = "tf"
         skip = True
         indentation = " " * 4
+
+    config = load_file_config({"PHCL": PHCL})
+
+    assert config is not None
+    assert config.extension == ".tf"
+    assert config.skip is True
+    assert config.indentation == " " * 4
+
+
+def test_load_file_config_reads_declarative_phcl_class():
+    class BaseSettings(Declarative):
+        extension = "tf"
+        indentation = " " * 2
+
+    class PHCL(BaseSettings):
+        indentation = " " * 4
+        skip = True
 
     config = load_file_config({"PHCL": PHCL})
 
@@ -141,7 +159,7 @@ class Web(Service):
         stdout=False,
     )
 
-    assert result.status == "write"
+    assert result.status == "write", result.detail
     assert result.output == tmp_path / "out" / "service.tf"
     assert result.output.read_text(encoding="utf-8") == (
         'service "web" {\n'
@@ -185,7 +203,7 @@ class Web(Service):
         stdout=False,
     )
 
-    assert result.status == "write"
+    assert result.status == "write", result.detail
     assert result.output == package_dir / "service.tf"
     assert result.output.read_text(encoding="utf-8") == (
         'service "web" {\n'
@@ -231,13 +249,12 @@ class Web(Service):
         stdout=False,
     )
 
-    assert result.status == "write"
+    assert result.status == "write", result.detail
     assert result.output.read_text(encoding="utf-8") == (
         'service "web" {\n'
         '    instance_type = "t3.micro"\n'
         '}\n'
     )
-
 
 def test_compile_file_falls_back_to_cli_extension_override(tmp_path):
     source = write_file(
