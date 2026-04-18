@@ -34,7 +34,7 @@ Classes provide exactly that in a natural way, which makes them a good fit for d
 Given:
 
 ```python
-from phcl.core.declarative import Declarative
+from phcl.core import Declarative
 
 
 class Base(Declarative):
@@ -78,7 +78,7 @@ This is the basis for abstract reusable building blocks in PHCL.
 Instance attributes are merged on top of class attributes as a local overlay.
 
 ```python
-from phcl.core.declarative import Declarative
+from phcl.core import Declarative
 
 
 class Config(Declarative):

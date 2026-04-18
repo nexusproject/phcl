@@ -12,20 +12,21 @@ The same entrypoint is also available as:
 python3 -m phcl build <target>
 ```
 
-## Execution Model
+## Loading Model
 
-The CLI compiles by executing Python source files.
+The CLI compiles by loading Python source files as modules when possible.
+When a proper module identity cannot be resolved, it falls back to direct file loading.
 
 For each file:
 
-1. the file is executed in isolation
+1. the file is loaded into an isolated compilation context
 2. the module-level `PHCL` config is read
 3. concrete `Node` subclasses are collected in the registry
 4. the registry is rendered into HCL output
 
 If a file does not expose `PHCL`, it is skipped.
 
-If execution succeeds but the registry is empty, the file is also skipped.
+If loading succeeds but the registry is empty, the file is also skipped.
 
 ## Targets
 
@@ -59,7 +60,7 @@ By default, generated files are written next to the source file.
 Example:
 
 ```bash
-phcl build examples/aws.py
+phcl build examples/aws.tf.py
 ```
 
 This produces:
@@ -83,7 +84,7 @@ This preserves relative structure under the new root.
 For a single file, output can be written to standard output:
 
 ```bash
-phcl build examples/aws.py --stdout
+phcl build examples/aws.tf.py --stdout
 ```
 
 `--stdout` is only valid for a single file target.
@@ -108,13 +109,13 @@ Supported fields today:
 Shared configuration can be imported and aliased:
 
 ```python
-from config import GlobalSettings as PHCL
+from .config import GlobalSettings as PHCL
 ```
 
 And locally refined through normal Python inheritance:
 
 ```python
-from config import GlobalSettings
+from .config import GlobalSettings
 
 
 class PHCL(GlobalSettings):

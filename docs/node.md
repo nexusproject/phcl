@@ -146,7 +146,7 @@ Project declaration classes are registered automatically.
 
 This is what lets PHCL compile a file without a separate main entrypoint:
 
-1. execute the file
+1. load the source module for the file
 2. collect declaration classes through the registry
 3. render the concrete subset
 

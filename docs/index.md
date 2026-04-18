@@ -45,10 +45,11 @@ You gain Python's expressive power without giving up the familiar shape of HCL-s
 
 PHCL generates HCL from one source file at a time.
 
-1. execute a Python file
-2. collect concrete `Node` subclasses in the registry
-3. render each collected node into top-level output
-4. render any nested `Block(...)` values inside node bodies
+1. load the source file into a compilation context
+2. resolve a Python module identity for the source when possible
+3. collect concrete `Node` subclasses in the registry
+4. render each collected node into top-level output
+5. render any nested `Block(...)` values inside node bodies
 
 In practice:
 

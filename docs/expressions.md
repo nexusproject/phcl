@@ -96,7 +96,7 @@ A `Reference` still renders as native HCL syntax, but it is constructed through 
 Example:
 
 ```python
-from phcl.core.expression import Reference
+from phcl.core import Reference
 
 
 ref = Reference("aws_instance.web").id
@@ -115,7 +115,7 @@ PHCL provides a core `jsonencode(...)` helper for fields that still want a JSON 
 Example:
 
 ```python
-from phcl.syntax import jsonencode
+from phcl.syntax import hcl, jsonencode
 
 
 container_definitions = jsonencode(
@@ -129,13 +129,8 @@ container_definitions = jsonencode(
 )
 ```
 
-Equivalent raw HCL form:
-
-```python
-hcl("aws_instance.web.id")
-```
-
-The `Reference` form is usually preferred for traversal paths because it is structured and less stringly-typed.
+This keeps the authoring side structural while still emitting a JSON-encoded
+value at the HCL boundary.
 
 ### Traversal
 
@@ -259,10 +254,12 @@ This reads as:
 
 This does not hardcode Terraform or any other product into the core.
 
-A product layer decides what the base reference should be:
+A product layer decides what the base reference should be, for example:
 
 - `aws_instance.web`
 - `data.aws_ami.ubuntu`
+
+The core itself stays product-agnostic.
 - `module.network`
 - or any other product-specific address form
 
