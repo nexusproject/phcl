@@ -34,7 +34,7 @@ At this level, the important part is not a particular product-specific block typ
 Typical usage is to define a product-specific root node type on top of `Node`:
 
 ```python
-from phcl import Node
+from phcl.core import Node
 
 
 class Resource(Node):
@@ -111,7 +111,7 @@ It also inherits label support from `Block`, so product-specific root node types
 Example:
 
 ```python
-from phcl import Block, Node
+from phcl.core import Block, Node
 
 
 class Resource(Node):
@@ -155,7 +155,8 @@ This is what lets PHCL compile a file without a separate main entrypoint:
 Base declarations that should not be emitted can be marked abstract:
 
 ```python
-from phcl import Node, abstract
+from phcl.core import Node
+from phcl.syntax import abstract
 
 
 @abstract

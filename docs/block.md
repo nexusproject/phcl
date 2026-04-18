@@ -87,7 +87,7 @@ At the low structural level, `Block` models the HCL block pattern directly:
 Minimal structural example:
 
 ```python
-from phcl import Block
+from phcl.core import Block
 
 
 class MyBlock(Block):

@@ -26,6 +26,7 @@ dev = [
 
 [tool.setuptools.packages.find]
 include = ["phcl*"]
+namespaces = true
 
 [project.scripts]
 phcl = "phcl.cli.phcl:main"

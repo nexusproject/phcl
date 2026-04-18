@@ -15,7 +15,7 @@ PHCL separates two different concepts:
 Use it when the value should be emitted exactly as HCL syntax.
 
 ```python
-from phcl import hcl
+from phcl.syntax import hcl
 
 
 value = hcl("var.region")
@@ -115,7 +115,7 @@ PHCL provides a core `jsonencode(...)` helper for fields that still want a JSON 
 Example:
 
 ```python
-from phcl import jsonencode
+from phcl.syntax import jsonencode
 
 
 container_definitions = jsonencode(
