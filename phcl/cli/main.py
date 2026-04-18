@@ -2,10 +2,12 @@ import argparse
 
 from .build import command_build
 from .ui import NO_COLOR
+from phcl.core import __version__
 
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="phcl")
+    parser.add_argument("-V", "--version", action="version", version=f"%(prog)s {__version__}")
     subparsers = parser.add_subparsers(dest="command")
 
     build = subparsers.add_parser("build", help="Compile PHCL source files into HCL output")

@@ -1,7 +1,10 @@
 from argparse import Namespace
 from pathlib import Path
 
+import pytest
+
 from phcl.cli.phcl import (
+    build_parser,
     command_build,
     compile_file,
     discover_python_files,
@@ -22,6 +25,17 @@ def write_file(path: Path, content: str) -> Path:
 def test_normalize_extension_adds_leading_dot():
     assert normalize_extension("tf") == ".tf"
     assert normalize_extension(".tf") == ".tf"
+
+
+def test_build_parser_supports_short_version_flag(capsys):
+    parser = build_parser()
+
+    with pytest.raises(SystemExit) as exc:
+        parser.parse_args(["-V"])
+
+    assert exc.value.code == 0
+    captured = capsys.readouterr()
+    assert captured.out.startswith("phcl ")
 
 
 def test_load_file_config_returns_none_when_phcl_is_missing():
