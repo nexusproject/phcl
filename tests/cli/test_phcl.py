@@ -152,8 +152,9 @@ class Web(Service):
 
 
 def test_compile_file_supports_imported_global_phcl_config_and_local_render_options(tmp_path):
+    package_dir = tmp_path / "infra"
     write_file(
-        tmp_path / "config.py",
+        package_dir / "config.py",
         """
 class GlobalSettings:
     extension = "tf"
@@ -162,9 +163,9 @@ class GlobalSettings:
         + "\n",
     )
     source = write_file(
-        tmp_path / "service.py",
+        package_dir / "service.py",
         """
-from config import GlobalSettings as PHCL
+from .config import GlobalSettings as PHCL
 from phcl.core.nodes import Node
 
 class Service(Node):
@@ -178,14 +179,14 @@ class Web(Service):
 
     result = compile_file(
         source,
-        base=tmp_path,
+        base=package_dir,
         out_dir=None,
         ext=None,
         stdout=False,
     )
 
     assert result.status == "write"
-    assert result.output == tmp_path / "service.tf"
+    assert result.output == package_dir / "service.tf"
     assert result.output.read_text(encoding="utf-8") == (
         'service "web" {\n'
         '    instance_type = "t3.micro"\n'
@@ -194,8 +195,9 @@ class Web(Service):
 
 
 def test_compile_file_supports_local_phcl_inheritance_override(tmp_path):
+    package_dir = tmp_path / "infra"
     write_file(
-        tmp_path / "config.py",
+        package_dir / "config.py",
         """
 class GlobalSettings:
     extension = "tf"
@@ -204,9 +206,9 @@ class GlobalSettings:
         + "\n",
     )
     source = write_file(
-        tmp_path / "service.py",
+        package_dir / "service.py",
         """
-from config import GlobalSettings
+from .config import GlobalSettings
 from phcl.core.nodes import Node
 
 class PHCL(GlobalSettings):
@@ -223,7 +225,7 @@ class Web(Service):
 
     result = compile_file(
         source,
-        base=tmp_path,
+        base=package_dir,
         out_dir=None,
         ext=None,
         stdout=False,
