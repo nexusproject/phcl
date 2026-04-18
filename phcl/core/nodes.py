@@ -49,6 +49,7 @@ class Block(Declarative):
 
     _phcl_kind: Optional[str] = None
     _phcl_label: Optional[Tuple[str, ...]] = None
+    _phcl_auto_label = True
 
     @classmethod
     def __class_getitem__(cls, labels):

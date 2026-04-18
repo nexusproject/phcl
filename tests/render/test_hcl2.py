@@ -72,6 +72,40 @@ def test_render_block_renders_block_with_labels_attributes_and_nested_blocks():
     )
 
 
+def test_render_block_can_disable_automatic_class_name_label_for_a_node_family():
+    class TerraformLike(Node):
+        _phcl_kind = "terraform"
+        _phcl_auto_label = False
+
+    class Settings(TerraformLike):
+        required_version = ">= 1.8.0"
+
+    rendered = render_block(Settings())
+
+    assert rendered == (
+        "terraform {\n"
+        '  required_version = ">= 1.8.0"\n'
+        "}"
+    )
+
+
+def test_render_block_preserves_explicit_labels_when_auto_label_is_disabled():
+    class ProviderLike(Node["aws"]):
+        _phcl_kind = "provider"
+        _phcl_auto_label = False
+
+    class Aws(ProviderLike):
+        region = "us-east-1"
+
+    rendered = render_block(Aws())
+
+    assert rendered == (
+        'provider "aws" {\n'
+        '  region = "us-east-1"\n'
+        "}"
+    )
+
+
 def test_render_block_raises_when_block_kind_is_missing():
     class Service(Block):
         pass

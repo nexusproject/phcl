@@ -112,7 +112,7 @@ def render_block(block: Block, *, kind=None, level: int = 0, indent: str = "  ")
         raise ValueError(f"Block type is not set for {block.__class__.__name__}")
 
     labels = list(getattr(block.__class__, "_phcl_label", []) or [])
-    if isinstance(block, Node):
+    if isinstance(block, Node) and getattr(block.__class__, "_phcl_auto_label", True):
         labels = labels + [class_to_label(block.__class__.__name__)]
     header = " ".join([block_type] + [quote_string(label) for label in labels]) + " {"
 
