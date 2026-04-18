@@ -59,6 +59,7 @@ In practice:
 
 ## Contents
 
+- [Syntax](./syntax.md)
 - [Declarative](./declarative.md)
 - [Block](./block.md)
 - [Node](./node.md)
