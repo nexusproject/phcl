@@ -60,10 +60,10 @@ In practice:
 
 ## Contents
 
-- [Syntax](./syntax.md)
 - [Declarative](./declarative.md)
 - [Block](./block.md)
 - [Node](./node.md)
-- [Python as Declaration Syntax](../PYTHON-TURNED-DECLARATIVE.md)
+- [Syntax](./syntax.md)
 - [Expressions and References](./expressions.md)
+- [Types](./types.md)
 - [CLI](./cli.md)
