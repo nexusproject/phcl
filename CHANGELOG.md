@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.2.3
+
+- Added native HCL type expressions in `phcl.types`
+- Added documentation for HCL type expressions and their use in Terraform `Variable.type`
+
 ## v0.2.2
 
 - Added PHCL version reporting in the CLI and core API
