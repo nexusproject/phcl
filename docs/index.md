@@ -64,11 +64,10 @@ In practice:
 
 Product-specific surfaces live in separate dialect packages built on top of it.
 
-At the moment, PHCL includes a Terraform dialect:
+At the moment, PHCL includes a Terraform dialect in the
+[`phcl-terraform`](https://github.com/nexusproject/phcl-terraform) repository.
 
-- Repository: `phcl-terraform`
-- GitHub: <https://github.com/nexusproject/phcl-terraform>
-- Install with:
+Install it with:
 
 ```bash
 pip install 'phcl[terraform]'
