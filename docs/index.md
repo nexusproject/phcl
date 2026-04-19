@@ -58,6 +58,24 @@ In practice:
 - concrete `Node` subclasses become top-level declarations
 - `Block` values stay nested structural content
 
+## Dialects
+
+`phcl` is the core language layer.
+
+Product-specific surfaces live in separate dialect packages built on top of it.
+
+At the moment, PHCL includes a Terraform dialect:
+
+- Repository: `phcl-terraform`
+- GitHub: <https://github.com/nexusproject/phcl-terraform>
+- Install with:
+
+```bash
+pip install 'phcl[terraform]'
+```
+
+This installs the compatible Terraform dialect package alongside the PHCL core.
+
 ## Contents
 
 - [Declarative](./declarative.md)
