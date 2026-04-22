@@ -8,12 +8,13 @@ alias, or an expression helper.
 
 from .core import Block as B
 from .core.decorators import abstract, generate
-from .core.expression import hcl, jsonencode
+from .core.expression import file, hcl, jsonencode
 
 __all__ = [
     "B",
     "abstract",
     "generate",
+    "file",
     "hcl",
     "jsonencode",
 ]

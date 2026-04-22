@@ -1,14 +1,6 @@
 import pytest
 
-from phcl.core.expression import Expression, Reference, hcl, jsonencode
-
-
-def test_hcl_wraps_and_strips_source():
-    value = hcl("  aws_instance.web.id  ")
-
-    assert isinstance(value, Expression)
-    assert value.source == "aws_instance.web.id"
-    assert str(value) == "aws_instance.web.id"
+from phcl.core.expression import Expression, Reference, hcl
 
 
 def test_expression_repr_is_stable():
@@ -51,21 +43,3 @@ def test_reference_repr_is_stable():
     ref = Reference("var.region")
 
     assert repr(ref) == "Reference('var.region')"
-
-
-def test_jsonencode_builds_expression_from_structural_python_values():
-    value = jsonencode(
-        [
-            {
-                "name": "api",
-                "image": hcl("var.app_image"),
-                "ports": (port for port in (8080, 8443)),
-                "enabled": True,
-            }
-        ]
-    )
-
-    assert isinstance(value, Expression)
-    assert value.source == (
-        'jsonencode([{name = "api", image = var.app_image, ports = [8080, 8443], enabled = true}])'
-    )

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from phcl.core.values import normalize_value
 
 
@@ -75,6 +77,14 @@ def render_expression_value(value) -> str:
 def jsonencode(value) -> Expression:
     normalized = normalize_value(value, passthrough_types=(Expression,))
     return Expression(f"jsonencode({render_expression_value(normalized)})")
+
+
+def file(path: str | Expression) -> Expression:
+    if isinstance(path, Expression):
+        rendered = path.source
+    else:
+        rendered = quote_string(path)
+    return Expression(f"file({rendered})")
 
 
 class Reference(Expression):
