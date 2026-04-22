@@ -9,6 +9,9 @@ from __future__ import annotations
 
 import inspect
 from pathlib import Path
+from string import Template
+
+from .core.expression import Expression, hcl
 
 
 def path_module() -> Path:
@@ -32,4 +35,45 @@ def path_module() -> Path:
     return Path(caller_file).resolve().parent
 
 
-__all__ = ["path_module"]
+def multiline(value: str, marker: str = "MULTILINE_EOF") -> Expression:
+    """
+    Render a Python string as an indented HCL heredoc expression.
+
+    This is useful when content already exists on the Python side and should be
+    emitted as multiline HCL rather than a quoted string. A single trailing
+    newline is trimmed before wrapping so content loaded from files via
+    ``read_text()`` does not accidentally gain an extra blank line.
+    """
+
+    body = value[:-1] if value.endswith("\n") else value
+    return hcl(f"""<<-{marker}
+{body}
+{marker}""")
+
+
+def _render_multiline(value: str, marker: str = "MULTILINE_EOF") -> Expression:
+    return multiline(value, marker=marker)
+
+
+def render_file(
+    path: str | Path,
+    *,
+    context: dict[str, object] | None = None,
+    multiline: bool = False,
+    marker: str = "MULTILINE_EOF",
+    encoding: str = "utf-8",
+) -> str | Expression:
+    """
+    Read a file, optionally apply ``string.Template`` substitution, and return
+    either the rendered text or a multiline HCL expression.
+    """
+
+    rendered = Path(path).read_text(encoding=encoding)
+    if context:
+        rendered = Template(rendered).substitute(context)
+    if multiline:
+        return _render_multiline(rendered, marker=marker)
+    return rendered
+
+
+__all__ = ["path_module", "multiline", "render_file"]
