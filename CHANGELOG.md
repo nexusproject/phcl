@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.3.0
+
+- Added the new `phcl.runtime` surface for Python-side build-time helpers
+- Added `path_module()`, `multiline()`, and `render_file()`
+- Added `file(...)` to the `phcl.syntax` authoring surface
+- Added runtime-focused examples for the new helpers
+- Reorganized tests to separate `syntax` and `runtime` coverage
+- Updated docs to document `syntax` and `runtime` as distinct layers
+- Simplified expression docs so they focus on the shared `Expression` / `Reference` model
+
 ## v0.2.3
 
 - Added native HCL type expressions in `phcl.types`
