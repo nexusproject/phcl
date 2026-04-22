@@ -77,6 +77,14 @@ def jsonencode(value) -> Expression:
     return Expression(f"jsonencode({render_expression_value(normalized)})")
 
 
+def file(path: str | Expression) -> Expression:
+    if isinstance(path, Expression):
+        rendered = path.source
+    else:
+        rendered = quote_string(path)
+    return Expression(f"file({rendered})")
+
+
 class Reference(Expression):
     """
     Lazy traversal object for building HCL expression paths.
