@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from phcl.core.values import normalize_value
 
 
