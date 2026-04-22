@@ -33,26 +33,9 @@ not:
 value = "var.region"
 ```
 
-### When to Use `hcl(...)`
-
-Use `hcl(...)` when you want to keep native HCL syntax as-is.
-
-Typical cases:
-
-- product-native functions
-- runtime expressions
-- HCL-native loops or conditions
-- syntax that should be evaluated by the target system, not by Python
-
-Examples:
-
-```python
-hcl("var.region")
-hcl("jsonencode(local.config)")
-hcl("each.value.name")
-```
-
-`hcl(...)` is the escape hatch back into native HCL.
+User-facing helpers such as `hcl(...)`, `jsonencode(...)`, and `file(...)` are
+documented in [`phcl.syntax`](./syntax.md). This page focuses on the common
+expression model underneath them.
 
 ## Structural Value Casting
 
@@ -108,47 +91,6 @@ Result:
 aws_instance.web.id
 ```
 
-## `jsonencode(...)`
-
-PHCL provides a core `jsonencode(...)` helper for fields that still want a JSON string boundary even when the authoring side stays structural and Python-first.
-
-Example:
-
-```python
-from phcl.syntax import hcl, jsonencode
-
-
-container_definitions = jsonencode(
-    [
-        {
-            "name": "api",
-            "image": hcl("var.app_image"),
-            "ports": (port for port in (8080, 8443)),
-        }
-    ]
-)
-```
-
-This keeps the authoring side structural while still emitting a JSON-encoded
-value at the HCL boundary.
-
-## `file(...)`
-
-PHCL also exposes `file(...)` as a wrapped HCL function through
-[`phcl.syntax`](./syntax.md).
-
-Example:
-
-```python
-from phcl.syntax import file
-
-
-user_data = file("${path.module}/scripts/bootstrap.sh")
-```
-
-This is useful when the target system should read the file at HCL evaluation
-time rather than on the Python side during PHCL generation.
-
 ### Traversal
 
 Attribute access extends the path:
@@ -168,7 +110,7 @@ Reference("module.network")[hcl("var.key")]
 
 `Reference` is a specialized form of `Expression`.
 
-Use `Expression` through `hcl(...)` when you want to write native HCL syntax directly:
+Use `Expression` when you want to write native HCL syntax directly:
 
 ```python
 hcl("jsonencode(local.config)")
@@ -201,7 +143,7 @@ aws_instance.web.id
 PHCL intentionally keeps a clean boundary here.
 
 - `Reference` covers structured traversal
-- `hcl(...)` covers native expression syntax
+- raw `Expression` covers native expression syntax
 
 PHCL does not try to replace the full HCL expression language with a parallel Python operator DSL.
 

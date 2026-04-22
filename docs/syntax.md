@@ -32,6 +32,73 @@ In practice:
 This keeps the common writing surface compact without turning `phcl.core` into
 another convenience barrel.
 
+## `hcl(...)`
+
+`hcl(...)` is the escape hatch back into native HCL syntax.
+
+Use it when the value should be emitted exactly as HCL instead of as a quoted
+string or lowered structural value.
+
+Typical cases:
+
+- product-native functions
+- runtime expressions
+- HCL-native loops or conditions
+- syntax that should be evaluated by the target system, not by Python
+
+Examples:
+
+```python
+from phcl.syntax import hcl
+
+
+region = hcl("var.region")
+config = hcl("jsonencode(local.config)")
+name = hcl("each.value.name")
+```
+
+## `jsonencode(...)`
+
+`jsonencode(...)` is a wrapped HCL function for fields that still want a JSON
+string boundary even when the authoring side stays structural and Python-first.
+
+Example:
+
+```python
+from phcl.syntax import hcl, jsonencode
+
+
+container_definitions = jsonencode(
+    [
+        {
+            "name": "api",
+            "image": hcl("var.app_image"),
+            "ports": (port for port in (8080, 8443)),
+        }
+    ]
+)
+```
+
+This keeps the authoring side structural while still emitting a JSON-encoded
+value at the HCL boundary.
+
+## `file(...)`
+
+`file(...)` is a wrapped HCL function for cases where the target system should
+read a file at HCL evaluation time.
+
+Example:
+
+```python
+from phcl.syntax import file
+
+
+user_data = file("${path.module}/scripts/bootstrap.sh")
+```
+
+This differs from helpers in [`phcl.runtime`](./runtime.md), which read files
+on the Python side during PHCL generation.
+
 ## What Belongs Here
 
 `phcl.syntax` is for helpers that stay on the HCL side of the language.
