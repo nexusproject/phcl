@@ -81,6 +81,7 @@ This installs the compatible Terraform dialect package alongside the PHCL core.
 - [Block](./block.md)
 - [Node](./node.md)
 - [Syntax](./syntax.md)
+- [Runtime](./runtime.md)
 - [Expressions and References](./expressions.md)
 - [Types](./types.md)
 - [CLI](./cli.md)

@@ -132,6 +132,23 @@ container_definitions = jsonencode(
 This keeps the authoring side structural while still emitting a JSON-encoded
 value at the HCL boundary.
 
+## `file(...)`
+
+PHCL also exposes `file(...)` as a wrapped HCL function through
+[`phcl.syntax`](./syntax.md).
+
+Example:
+
+```python
+from phcl.syntax import file
+
+
+user_data = file("${path.module}/scripts/bootstrap.sh")
+```
+
+This is useful when the target system should read the file at HCL evaluation
+time rather than on the Python side during PHCL generation.
+
 ### Traversal
 
 Attribute access extends the path:
