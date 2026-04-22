@@ -43,14 +43,7 @@ class Web(Resource["aws_instance"]):
     instance_type = "t3.small"
 ```
 
-See also:
-
-- [Docs Index](https://github.com/nexusproject/phcl/blob/main/docs/index.md)
-- [Declarative](https://github.com/nexusproject/phcl/blob/main/docs/declarative.md)
-- [Block](https://github.com/nexusproject/phcl/blob/main/docs/block.md)
-- [Node](https://github.com/nexusproject/phcl/blob/main/docs/node.md)
-- [Syntax](https://github.com/nexusproject/phcl/blob/main/docs/syntax.md)
-- [Expressions and References](https://github.com/nexusproject/phcl/blob/main/docs/expressions.md)
+See also: [Documentation](https://github.com/nexusproject/phcl/blob/main/docs/index.md)
 
 ## CLI
 
@@ -68,9 +61,7 @@ This makes PHCL easy to adopt incrementally:
 - generate an entire repository in place
 - generate an entire repository into another target tree
 
-See also:
-
-- [CLI Docs](https://github.com/nexusproject/phcl/blob/main/docs/cli.md)
+See also: [CLI docs](https://github.com/nexusproject/phcl/blob/main/docs/cli.md)
 
 ## Installation
 
