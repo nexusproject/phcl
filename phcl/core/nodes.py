@@ -65,7 +65,7 @@ class Block(Declarative):
             },
         )
 
-    def __init__(self, **kwargs):
+    def __init__(self, /, **kwargs):
         for k in kwargs:
             if k.startswith("_"):
                 raise ValueError("Attributes starting with '_' are reserved")
