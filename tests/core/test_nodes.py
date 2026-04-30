@@ -116,6 +116,13 @@ def test_node_reference_entrypoint_uses_reference_base():
     assert str(ref) == "service.main"
 
 
+def test_node_reference_entrypoint_does_not_use_classmethod_property_stack():
+    descriptor = Node.__dict__["_"]
+
+    assert not isinstance(descriptor, classmethod)
+    assert not isinstance(descriptor, property)
+
+
 def test_node_reference_entrypoint_raises_for_non_addressable_nodes():
     class Service(Node):
         pass

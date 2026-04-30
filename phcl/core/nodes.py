@@ -8,6 +8,16 @@ from .registry import Registry
 from .values import normalize_value
 
 
+class _ClassProperty:
+    def __init__(self, fget):
+        self.fget = fget
+
+    def __get__(self, instance, owner=None):
+        if owner is None:
+            owner = type(instance)
+        return self.fget(owner)
+
+
 def class_to_label(name: str) -> str:
     """
     Convert Python class name (PascalCase with acronyms)
@@ -134,8 +144,7 @@ class Node(Block):
     def _phcl_logical_name(cls) -> str:
         return class_to_label(cls.__name__)
 
-    @classmethod
-    @property
+    @_ClassProperty
     def _(cls):
         return Reference(cls._phcl_reference_base())
 
