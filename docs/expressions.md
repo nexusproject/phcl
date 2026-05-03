@@ -18,24 +18,25 @@ Use it when the value should be emitted exactly as HCL syntax.
 from phcl.syntax import hcl
 
 
-value = hcl("var.region")
+value = hcl('var.enabled ? "api" : "worker"')
 ```
 
 This renders as:
 
 ```hcl
-value = var.region
+value = var.enabled ? "api" : "worker"
 ```
 
 not:
 
 ```hcl
-value = "var.region"
+value = "var.enabled ? \"api\" : \"worker\""
 ```
 
-User-facing helpers such as `hcl(...)`, `jsonencode(...)`, and `file(...)` are
-documented in [`phcl.syntax`](./syntax.md). This page focuses on the common
-expression model underneath them.
+User-facing helpers such as `hcl(...)`, `hcl_call(...)`,
+`hcl_jsonencode(...)`, and `hcl_file(...)` are documented in
+[`phcl.syntax`](./syntax.md). This page focuses on the common expression model
+underneath them.
 
 ## Structural Value Casting
 
@@ -55,7 +56,7 @@ Example:
 ```python
 config = {
     "name": "api",
-    "image": hcl("var.app_image"),
+    "image": "registry.example.com/api:latest",
     "ports": (port for port in (8080, 8443)),
 }
 ```
@@ -103,7 +104,7 @@ Index access also extends the path:
 
 ```python
 Reference("module.network")["public"]
-Reference("module.network")[hcl("var.key")]
+Reference("module.network")[Reference("var.key")]
 ```
 
 ## Relationship Between `Expression` and `Reference`
@@ -113,8 +114,8 @@ Reference("module.network")[hcl("var.key")]
 Use `Expression` when you want to write native HCL syntax directly:
 
 ```python
-hcl("jsonencode(local.config)")
 hcl("a ? b : c")
+hcl("[for item in var.items : item.name]")
 ```
 
 Use `Reference` when the value is a traversal path that can be built structurally:

@@ -9,7 +9,7 @@ an expression helper, or a structural alias.
 Typical imports:
 
 ```python
-from phcl.syntax import B, abstract, file, generate, hcl, jsonencode
+from phcl.syntax import B, abstract, generate, hcl, hcl_call, hcl_file, hcl_jsonencode
 from phcl.core import Node
 ```
 
@@ -25,9 +25,13 @@ In practice:
 - `B` as the short alias for `Block`
 - `abstract`
 - `generate`
-- `file(...)`
 - `hcl(...)`
-- `jsonencode(...)`
+- `hcl_call(...)`
+- `hcl_file(...)`
+- `hcl_jsonencode(...)`
+
+The older `file(...)` and `jsonencode(...)` names remain available as
+deprecated compatibility aliases and will be removed in a future release.
 
 This keeps the common writing surface compact without turning `phcl.core` into
 another convenience barrel.
@@ -44,7 +48,7 @@ Typical cases:
 - product-native functions
 - runtime expressions
 - HCL-native loops or conditions
-- syntax that should be evaluated by the target system, not by Python
+- syntax that does not have a structured PHCL helper yet
 
 Examples:
 
@@ -52,27 +56,49 @@ Examples:
 from phcl.syntax import hcl
 
 
-region = hcl("var.region")
-config = hcl("jsonencode(local.config)")
-name = hcl("each.value.name")
+enabled_name = hcl('var.enabled ? "api" : "worker"')
+matching_names = hcl('[for name in var.names : name if startswith(name, "api-")]')
 ```
 
-## `jsonencode(...)`
+## `hcl_call(...)`
 
-`jsonencode(...)` is a wrapped HCL function for fields that still want a JSON
-string boundary even when the authoring side stays structural and Python-first.
+`hcl_call(...)` builds a native HCL function call from normal PHCL/Python
+arguments.
+
+Use it when the HCL function name should be selected in code, or when PHCL does
+not provide a dedicated wrapper for that function.
 
 Example:
 
 ```python
-from phcl.syntax import hcl, jsonencode
+from phcl.syntax import hcl, hcl_call
+from phcl.terraform import var
 
 
-container_definitions = jsonencode(
+tags = hcl_call("merge", {"managed_by": "phcl"}, var.extra_tags)
+name = hcl_call("coalesce", var.name, "default")
+```
+
+This keeps arguments structural while still emitting a target-side HCL function
+call.
+
+## `hcl_jsonencode(...)`
+
+`hcl_jsonencode(...)` is a wrapped HCL function for fields that still want a
+JSON string boundary even when the authoring side stays structural and
+Python-first.
+
+Example:
+
+```python
+from phcl.syntax import hcl_jsonencode
+
+
+container_definitions = hcl_jsonencode(
     [
         {
             "name": "api",
-            "image": hcl("var.app_image"),
+            "image": "registry.example.com/api:latest",
             "ports": (port for port in (8080, 8443)),
         }
     ]
@@ -82,18 +108,18 @@ container_definitions = jsonencode(
 This keeps the authoring side structural while still emitting a JSON-encoded
 value at the HCL boundary.
 
-## `file(...)`
+## `hcl_file(...)`
 
-`file(...)` is a wrapped HCL function for cases where the target system should
-read a file at HCL evaluation time.
+`hcl_file(...)` is a wrapped HCL function for cases where the target system
+should read a file at HCL evaluation time.
 
 Example:
 
 ```python
-from phcl.syntax import file
+from phcl.syntax import hcl_file
 
 
-user_data = file("${path.module}/scripts/bootstrap.sh")
+user_data = hcl_file("${path.module}/scripts/bootstrap.sh")
 ```
 
 This differs from helpers in [`phcl.runtime`](./runtime.md), which read files
@@ -108,7 +134,8 @@ That includes:
 - structural aliases such as `B`
 - declaration decorators such as `abstract` and `generate`
 - native HCL expression helpers such as `hcl(...)`
-- wrapped HCL functions such as `jsonencode(...)` and `file(...)`
+- generic HCL function calls through `hcl_call(...)`
+- wrapped HCL functions such as `hcl_jsonencode(...)` and `hcl_file(...)`
 
 If a helper executes in Python during PHCL generation instead of becoming HCL
 syntax in the output, it belongs in [`phcl.runtime`](./runtime.md) instead.
