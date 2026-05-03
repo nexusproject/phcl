@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.3.1
+
+- Fixed block construction so `self` can be used as a normal HCL attribute name
+- Fixed node reference accessors for Python 3.13 compatibility
+- Added regression coverage for both fixes
+
 ## v0.3.0
 
 - Added the new `phcl.runtime` surface for Python-side build-time helpers
