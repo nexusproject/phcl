@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from collections.abc import Iterable, Mapping
+from typing import Union
+
 from phcl.core.values import normalize_value
 
 
@@ -24,6 +27,19 @@ class Expression:
 
     def __bool__(self):
         raise TypeError("HCL Expression cannot be used in Python boolean context")
+
+
+# Valid inputs for HCL expression rendering.
+_HCLValue = Union[
+    Expression,
+    None,
+    bool,
+    int,
+    float,
+    str,
+    Mapping[str, "_HCLValue"],
+    Iterable["_HCLValue"],
+]
 
 
 def hcl(source: str) -> Expression:
@@ -74,17 +90,20 @@ def render_expression_value(value) -> str:
     raise TypeError(f"Unsupported expression value: {type(value)!r}")
 
 
-def jsonencode(value) -> Expression:
-    normalized = normalize_value(value, passthrough_types=(Expression,))
-    return Expression(f"jsonencode({render_expression_value(normalized)})")
+def hcl_call(name: str, *args: _HCLValue) -> Expression:
+    if not isinstance(name, str):
+        raise TypeError("HCL function name must be a string")
 
+    normalized_name = name.strip()
+    if not normalized_name:
+        raise ValueError("HCL function name cannot be empty")
 
-def file(path: str | Expression) -> Expression:
-    if isinstance(path, Expression):
-        rendered = path.source
-    else:
-        rendered = quote_string(path)
-    return Expression(f"file({rendered})")
+    normalized_args = (
+        normalize_value(arg, passthrough_types=(Expression,))
+        for arg in args
+    )
+    rendered_args = ", ".join(render_expression_value(arg) for arg in normalized_args)
+    return Expression(f"{normalized_name}({rendered_args})")
 
 
 class Reference(Expression):

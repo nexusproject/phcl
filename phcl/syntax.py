@@ -6,15 +6,48 @@ without having to remember which helper is technically a decorator, a block
 alias, or an expression helper.
 """
 
+from __future__ import annotations
+
+import warnings
+
 from .core import Block as B
 from .core.decorators import abstract, generate
-from .core.expression import file, hcl, jsonencode
+from .core.expression import Expression, _HCLValue, hcl, hcl_call
+
+
+def hcl_jsonencode(value: _HCLValue) -> Expression:
+    return hcl_call("jsonencode", value)
+
+
+def hcl_file(path: str | Expression) -> Expression:
+    return hcl_call("file", path)
+
+
+def jsonencode(value: _HCLValue) -> Expression:
+    warnings.warn(
+        "`jsonencode(...)` is deprecated and will be removed in a future "
+        "release; use `hcl_jsonencode(...)` instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    return hcl_jsonencode(value)
+
+
+def file(path: str | Expression) -> Expression:
+    warnings.warn(
+        "`file(...)` is deprecated and will be removed in a future release; "
+        "use `hcl_file(...)` instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    return hcl_file(path)
 
 __all__ = [
     "B",
     "abstract",
     "generate",
-    "file",
     "hcl",
-    "jsonencode",
+    "hcl_call",
+    "hcl_file",
+    "hcl_jsonencode",
 ]
