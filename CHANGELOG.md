@@ -6,6 +6,9 @@
 - Added explicit `hcl_jsonencode(...)` and `hcl_yamlencode(...)` wrappers while keeping `jsonencode(...)` as a compatibility alias
 - Added explicit `hcl_file(...)` and `hcl_templatefile(...)` wrappers while keeping `file(...)` as a compatibility alias
 - Deprecated `jsonencode(...)` and `file(...)` in favor of `hcl_jsonencode(...)` and `hcl_file(...)`
+- Added `heredoc(...)` as the preferred runtime helper for HCL heredoc expressions
+- Changed `render_file(...)` to return an HCL heredoc expression by default; pass `heredoc=False` for plain text
+- Deprecated `multiline(...)` and `render_file(..., multiline=...)` in favor of `heredoc(...)` and `render_file(..., heredoc=...)`
 
 ## v0.3.1
 

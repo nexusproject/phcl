@@ -8,6 +8,7 @@ rendered as HCL expressions in the output.
 from __future__ import annotations
 
 import inspect
+import warnings
 from pathlib import Path
 from string import Template
 
@@ -35,45 +36,73 @@ def path_module() -> Path:
     return Path(caller_file).resolve().parent
 
 
-def multiline(value: str, marker: str = "MULTILINE_EOF") -> Expression:
-    """
-    Render a Python string as an indented HCL heredoc expression.
-
-    This is useful when content already exists on the Python side and should be
-    emitted as multiline HCL rather than a quoted string. A single trailing
-    newline is trimmed before wrapping so content loaded from files via
-    ``read_text()`` does not accidentally gain an extra blank line.
-    """
-
+def _heredoc(value: str, marker: str) -> Expression:
     body = value[:-1] if value.endswith("\n") else value
     return hcl(f"""<<-{marker}
 {body}
 {marker}""")
 
 
-def _render_multiline(value: str, marker: str = "MULTILINE_EOF") -> Expression:
-    return multiline(value, marker=marker)
+def heredoc(value: str, marker: str = "HEREDOC_EOF") -> Expression:
+    """
+    Render a Python string as an indented HCL heredoc expression.
+
+    This is useful when content already exists on the Python side and should be
+    emitted as an HCL heredoc rather than a quoted string. A single trailing
+    newline is trimmed before wrapping so content loaded from files via
+    ``read_text()`` does not accidentally gain an extra blank line.
+    """
+
+    return _heredoc(value, marker=marker)
+
+
+def multiline(value: str, marker: str = "MULTILINE_EOF") -> Expression:
+    warnings.warn(
+        "`multiline(...)` is deprecated and will be removed in a future "
+        "release; use `heredoc(...)` instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    return heredoc(value, marker=marker)
 
 
 def render_file(
     path: str | Path,
     *,
     context: dict[str, object] | None = None,
-    multiline: bool = False,
-    marker: str = "MULTILINE_EOF",
+    heredoc: bool | None = None,
+    multiline: bool | None = None,
+    marker: str = "HEREDOC_EOF",
     encoding: str = "utf-8",
 ) -> str | Expression:
     """
     Read a file, optionally apply ``string.Template`` substitution, and return
-    either the rendered text or a multiline HCL expression.
+    either the rendered text or an HCL heredoc expression.
     """
 
     rendered = Path(path).read_text(encoding=encoding)
     if context:
         rendered = Template(rendered).substitute(context)
-    if multiline:
-        return _render_multiline(rendered, marker=marker)
+
+    if heredoc is not None and multiline is not None:
+        raise ValueError("render_file() cannot use both heredoc and multiline")
+
+    if multiline is not None:
+        warnings.warn(
+            "`render_file(..., multiline=...)` is deprecated and will be "
+            "removed in a future release; use `heredoc=...` instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        heredoc = multiline
+        if marker == "HEREDOC_EOF":
+            marker = "MULTILINE_EOF"
+
+    heredoc = True if heredoc is None else heredoc
+
+    if heredoc:
+        return _heredoc(rendered, marker=marker)
     return rendered
 
 
-__all__ = ["path_module", "multiline", "render_file"]
+__all__ = ["path_module", "heredoc", "multiline", "render_file"]
