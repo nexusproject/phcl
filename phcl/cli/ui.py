@@ -43,8 +43,15 @@ def status_word(status: str, *, stream) -> str:
         "skip": paint("skip", Ansi.dim, stream=stream),
         "stdout": paint("stdout", Ansi.dim, stream=stream),
         "fail": paint("fail", Ansi.red, stream=stream),
+        "warn": paint("warn", Ansi.yellow, stream=stream),
     }
     return words.get(status, paint(status, stream=stream))
+
+
+def format_warning_location(warning, root: Path) -> str:
+    path = Path(warning.filename)
+    label = path.relative_to(root) if path.is_absolute() and path.is_relative_to(root) else path
+    return f"{label}:{warning.lineno}"
 
 
 def print_result(result, root: Path):
@@ -59,9 +66,16 @@ def print_result(result, root: Path):
         print(f"  {status_word('skip', stream=sys.stdout)} {source} {detail}")
     elif result.status == "stdout":
         print(f"  {status_word('stdout', stream=sys.stderr)} {source}", file=sys.stderr)
+    elif result.status == "ignore":
+        pass
     else:
         detail = paint(f"({result.detail})", Ansi.dim, stream=sys.stderr)
         print(f"  {status_word('fail', stream=sys.stderr)} {source} {detail}", file=sys.stderr)
+
+    for warning in result.warnings or []:
+        location = format_warning_location(warning, root)
+        detail = paint(f"({warning.message})", Ansi.dim, stream=sys.stderr)
+        print(f"  {status_word('warn', stream=sys.stderr)} {location} {detail}", file=sys.stderr)
 
 
 def print_group_heading(label: str):

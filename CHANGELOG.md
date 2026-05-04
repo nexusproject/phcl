@@ -9,6 +9,7 @@
 - Added `heredoc(...)` as the preferred runtime helper for HCL heredoc expressions
 - Changed `render_file(...)` to return an HCL heredoc expression by default; pass `heredoc=False` for plain text
 - Deprecated `multiline(...)` and `render_file(..., multiline=...)` in favor of `heredoc(...)` and `render_file(..., heredoc=...)`
+- Updated the CLI build output to report PHCL deprecation warnings with source locations
 
 ## v0.3.1
 

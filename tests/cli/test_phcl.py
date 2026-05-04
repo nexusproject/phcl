@@ -183,6 +183,40 @@ class Web(Service):
     assert Registry.renderables() == []
 
 
+def test_compile_file_collects_deprecation_warnings(tmp_path):
+    source = write_file(
+        tmp_path / "service.py",
+        """
+class PHCL:
+    extension = "tf"
+
+from phcl.core.nodes import Node
+from phcl.syntax import jsonencode
+
+class Service(Node):
+    _phcl_kind = "service"
+
+class Web(Service):
+    config = jsonencode({"name": "api"})
+""".strip()
+        + "\n",
+    )
+
+    result = compile_file(
+        source,
+        base=tmp_path,
+        out_dir=None,
+        ext=None,
+        stdout=False,
+    )
+
+    assert result.status == "write"
+    assert result.warnings is not None
+    assert len(result.warnings) == 1
+    assert "jsonencode" in result.warnings[0].message
+    assert result.warnings[0].filename == str(source)
+
+
 def test_compile_file_supports_imported_global_phcl_config_and_local_render_options(tmp_path):
     package_dir = tmp_path / "infra"
     write_file(
@@ -436,3 +470,105 @@ def test_command_build_reports_failures_in_stdout_mode(tmp_path, capsys):
     assert code == 1
     assert "fail" in captured.err
     assert "boom" in captured.err
+
+
+def test_command_build_prints_deprecation_warnings(tmp_path, capsys):
+    source = write_file(
+        tmp_path / "service.py",
+        """
+class PHCL:
+    extension = "tf"
+
+from phcl.core.nodes import Node
+from phcl.syntax import jsonencode
+
+class Service(Node):
+    _phcl_kind = "service"
+
+class Web(Service):
+    config = jsonencode({"name": "api"})
+""".strip()
+        + "\n",
+    )
+
+    args = Namespace(
+        target=str(source),
+        out_dir=None,
+        ext=None,
+        stdout=False,
+        quiet=False,
+    )
+
+    code = command_build(args)
+    captured = capsys.readouterr()
+
+    assert code == 0
+    assert "warn" in captured.err
+    assert "jsonencode" in captured.err
+    assert "service.py:" in captured.err
+    assert "1 warnings" in captured.out
+
+
+def test_command_build_deduplicates_imported_deprecation_warnings(tmp_path, capsys):
+    package_dir = tmp_path / "infra"
+    write_file(package_dir / "__init__.py", "")
+    write_file(
+        package_dir / "shared.py",
+        """
+from phcl.syntax import jsonencode
+
+SHARED = jsonencode({"name": "api"})
+""".strip()
+        + "\n",
+    )
+    write_file(
+        package_dir / "one.py",
+        """
+class PHCL:
+    extension = "tf"
+
+from .shared import SHARED
+from phcl.core.nodes import Node
+
+class Thing(Node):
+    _phcl_kind = "thing"
+
+class One(Thing):
+    config = SHARED
+""".strip()
+        + "\n",
+    )
+    write_file(
+        package_dir / "two.py",
+        """
+class PHCL:
+    extension = "tf"
+
+from .shared import SHARED
+from phcl.core.nodes import Node
+
+class Thing(Node):
+    _phcl_kind = "thing"
+
+class Two(Thing):
+    config = SHARED
+""".strip()
+        + "\n",
+    )
+
+    args = Namespace(
+        target=str(package_dir),
+        out_dir=None,
+        ext=None,
+        stdout=False,
+        quiet=False,
+    )
+
+    code = command_build(args)
+    captured = capsys.readouterr()
+
+    assert code == 0
+    assert captured.err.count("warn") == 1
+    assert "jsonencode" in captured.err
+    assert "shared.py:" in captured.err
+    assert "1 warnings" in captured.out
