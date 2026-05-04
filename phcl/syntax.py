@@ -19,8 +19,16 @@ def hcl_jsonencode(value: _HCLValue) -> Expression:
     return hcl_call("jsonencode", value)
 
 
+def hcl_yamlencode(value: _HCLValue) -> Expression:
+    return hcl_call("yamlencode", value)
+
+
 def hcl_file(path: str | Expression) -> Expression:
     return hcl_call("file", path)
+
+
+def hcl_templatefile(path: str | Expression, vars: _HCLValue) -> Expression:
+    return hcl_call("templatefile", path, vars)
 
 
 def jsonencode(value: _HCLValue) -> Expression:
@@ -50,4 +58,6 @@ __all__ = [
     "hcl_call",
     "hcl_file",
     "hcl_jsonencode",
+    "hcl_templatefile",
+    "hcl_yamlencode",
 ]

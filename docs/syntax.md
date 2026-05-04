@@ -9,7 +9,7 @@ an expression helper, or a structural alias.
 Typical imports:
 
 ```python
-from phcl.syntax import B, abstract, generate, hcl, hcl_call, hcl_file, hcl_jsonencode
+from phcl.syntax import B, abstract, generate, hcl, hcl_call, hcl_file, hcl_jsonencode, hcl_templatefile, hcl_yamlencode
 from phcl.core import Node
 ```
 
@@ -29,6 +29,8 @@ In practice:
 - `hcl_call(...)`
 - `hcl_file(...)`
 - `hcl_jsonencode(...)`
+- `hcl_templatefile(...)`
+- `hcl_yamlencode(...)`
 
 The older `file(...)` and `jsonencode(...)` names remain available as
 deprecated compatibility aliases and will be removed in a future release.
@@ -108,6 +110,26 @@ container_definitions = hcl_jsonencode(
 This keeps the authoring side structural while still emitting a JSON-encoded
 value at the HCL boundary.
 
+## `hcl_yamlencode(...)`
+
+`hcl_yamlencode(...)` is the YAML sibling of `hcl_jsonencode(...)`: it keeps
+the authoring side structural while emitting a target-side YAML string.
+
+Example:
+
+```python
+from phcl.syntax import hcl_yamlencode
+
+
+manifest = hcl_yamlencode(
+    {
+        "apiVersion": "v1",
+        "kind": "ConfigMap",
+        "metadata": {"name": "app-config"},
+    }
+)
+```
+
 ## `hcl_file(...)`
 
 `hcl_file(...)` is a wrapped HCL function for cases where the target system
@@ -125,6 +147,31 @@ user_data = hcl_file("${path.module}/scripts/bootstrap.sh")
 This differs from helpers in [`phcl.runtime`](./runtime.md), which read files
 on the Python side during PHCL generation.
 
+## `hcl_templatefile(...)`
+
+`hcl_templatefile(...)` is a wrapped HCL function for target-side template
+rendering with structural PHCL/Python variables.
+
+Example:
+
+```python
+from phcl.syntax import hcl_templatefile
+from phcl.terraform import var
+
+
+user_data = hcl_templatefile(
+    "${path.module}/templates/user_data.sh.tftpl",
+    {
+        "app_name": var.app_name,
+        "port": 8080,
+        "enable_metrics": True,
+    },
+)
+```
+
+This differs from [`phcl.runtime.render_file(...)`](./runtime.md), which reads
+and optionally templates files on the Python side during PHCL generation.
+
 ## What Belongs Here
 
 `phcl.syntax` is for helpers that stay on the HCL side of the language.
@@ -135,7 +182,7 @@ That includes:
 - declaration decorators such as `abstract` and `generate`
 - native HCL expression helpers such as `hcl(...)`
 - generic HCL function calls through `hcl_call(...)`
-- wrapped HCL functions such as `hcl_jsonencode(...)` and `hcl_file(...)`
+- wrapped HCL functions such as `hcl_jsonencode(...)`, `hcl_yamlencode(...)`, `hcl_file(...)`, and `hcl_templatefile(...)`
 
 If a helper executes in Python during PHCL generation instead of becoming HCL
 syntax in the output, it belongs in [`phcl.runtime`](./runtime.md) instead.

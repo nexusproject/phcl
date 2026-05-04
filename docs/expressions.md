@@ -34,7 +34,8 @@ value = "var.enabled ? \"api\" : \"worker\""
 ```
 
 User-facing helpers such as `hcl(...)`, `hcl_call(...)`,
-`hcl_jsonencode(...)`, and `hcl_file(...)` are documented in
+`hcl_jsonencode(...)`, `hcl_yamlencode(...)`, `hcl_file(...)`, and
+`hcl_templatefile(...)` are documented in
 [`phcl.syntax`](./syntax.md). This page focuses on the common expression model
 underneath them.
 

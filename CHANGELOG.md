@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.3.2
+
+- Added `hcl_call(...)` for building arbitrary HCL function calls from PHCL/Python values
+- Added explicit `hcl_jsonencode(...)` and `hcl_yamlencode(...)` wrappers while keeping `jsonencode(...)` as a compatibility alias
+- Added explicit `hcl_file(...)` and `hcl_templatefile(...)` wrappers while keeping `file(...)` as a compatibility alias
+- Deprecated `jsonencode(...)` and `file(...)` in favor of `hcl_jsonencode(...)` and `hcl_file(...)`
+
 ## v0.3.1
 
 - Fixed block construction so `self` can be used as a normal HCL attribute name
