@@ -11,7 +11,7 @@ def test_render_file_returns_heredoc_expression_by_default(tmp_path):
     value = render_file(path)
 
     assert isinstance(value, Expression)
-    assert value.source == "<<-HEREDOC_EOF\nhello\nworld\nHEREDOC_EOF"
+    assert value.source == "<<-EOF\nhello\nworld\nEOF"
 
 
 def test_render_file_can_return_plain_text(tmp_path):
@@ -36,7 +36,7 @@ def test_render_file_applies_template_context_before_heredoc_wrapping(tmp_path):
     )
 
     assert isinstance(value, Expression)
-    assert value.source == "<<-HEREDOC_EOF\nhello dmitry from phcl\nHEREDOC_EOF"
+    assert value.source == "<<-EOF\nhello dmitry from phcl\nEOF"
 
 
 def test_render_file_can_return_heredoc_expression(tmp_path):
@@ -50,7 +50,7 @@ def test_render_file_can_return_heredoc_expression(tmp_path):
     )
 
     assert isinstance(value, Expression)
-    assert value.source == "<<-HEREDOC_EOF\necho hello\nHEREDOC_EOF"
+    assert value.source == "<<-EOF\necho hello\nEOF"
 
 
 def test_render_file_multiline_remains_supported_alias(tmp_path):
@@ -65,7 +65,7 @@ def test_render_file_multiline_remains_supported_alias(tmp_path):
         )
 
     assert isinstance(value, Expression)
-    assert value.source == "<<-MULTILINE_EOF\necho hello\nMULTILINE_EOF"
+    assert value.source == "<<-EOF\necho hello\nEOF"
 
 
 def test_render_file_multiline_false_remains_supported_alias_for_plain_text(tmp_path):

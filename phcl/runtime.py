@@ -43,7 +43,7 @@ def _heredoc(value: str, marker: str) -> Expression:
 {marker}""")
 
 
-def heredoc(value: str, marker: str = "HEREDOC_EOF") -> Expression:
+def heredoc(value: str, marker: str = "EOF") -> Expression:
     """
     Render a Python string as an indented HCL heredoc expression.
 
@@ -56,7 +56,7 @@ def heredoc(value: str, marker: str = "HEREDOC_EOF") -> Expression:
     return _heredoc(value, marker=marker)
 
 
-def multiline(value: str, marker: str = "MULTILINE_EOF") -> Expression:
+def multiline(value: str, marker: str = "EOF") -> Expression:
     warnings.warn(
         "`multiline(...)` is deprecated and will be removed in a future "
         "release; use `heredoc(...)` instead.",
@@ -72,7 +72,7 @@ def render_file(
     context: dict[str, object] | None = None,
     heredoc: bool | None = None,
     multiline: bool | None = None,
-    marker: str = "HEREDOC_EOF",
+    marker: str = "EOF",
     encoding: str = "utf-8",
 ) -> str | Expression:
     """
@@ -95,9 +95,6 @@ def render_file(
             stacklevel=2,
         )
         heredoc = multiline
-        if marker == "HEREDOC_EOF":
-            marker = "MULTILINE_EOF"
-
     heredoc = True if heredoc is None else heredoc
 
     if heredoc:
