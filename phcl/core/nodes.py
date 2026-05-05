@@ -85,6 +85,8 @@ class Block(Declarative):
         def coerce(item):
             if isinstance(item, type) and issubclass(item, Node):
                 return item._
+            if isinstance(item, type) and issubclass(item, Block):
+                return item()
             return item
 
         return normalize_value(value, passthrough_types=(Block,), coerce=coerce)

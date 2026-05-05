@@ -155,3 +155,21 @@ def test_block_normalization_coerces_node_subclasses_to_references_in_attrs():
     assert [item.source for item in normalized_depends_on] == [Listener._.source]
     assert normalized_wiring["primary"].source == Service._.source
     assert [item.source for item in normalized_wiring["dependencies"]] == [Listener._.source]
+
+
+def test_block_normalization_materializes_block_subclasses():
+    class HttpIngress(Block):
+        port = 80
+
+    class HttpsIngress(HttpIngress):
+        port = 443
+
+    class Service(Block):
+        ingress = [HttpIngress, HttpsIngress]
+
+    normalized = Service()._phcl_normalize_attr("ingress", Service.ingress)
+
+    assert [item._phcl_attributes for item in normalized] == [
+        {"port": 80},
+        {"port": 443},
+    ]

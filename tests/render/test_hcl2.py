@@ -47,6 +47,26 @@ def test_walk_block_splits_scalar_attributes_and_nested_blocks():
     assert [name for name, _ in nested] == ["config", "ingress", "ingress"]
 
 
+def test_walk_block_materializes_block_classes_as_nested_blocks():
+    class HttpIngress(Block):
+        port = 80
+
+    class HttpsIngress(HttpIngress):
+        port = 443
+
+    class Service(Block):
+        _phcl_kind = "service"
+        ingress = [HttpIngress, HttpsIngress]
+
+    attrs, nested = walk_block(Service())
+
+    assert attrs == []
+    assert [(name, child._phcl_attributes["port"]) for name, child in nested] == [
+        ("ingress", 80),
+        ("ingress", 443),
+    ]
+
+
 def test_render_block_renders_block_with_labels_attributes_and_nested_blocks():
     class Service(Node["api"]):
         _phcl_kind = "service"
