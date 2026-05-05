@@ -4,6 +4,7 @@
 
 - Added `dict_block(...)` for building generated `Block` bases from mappings
 - Added `block_dict(...)` for converting assembled `Block` attributes back into mappings
+- Fixed nested block normalization so `Block` subclasses can be used directly as composable fragments, for example `ingress = [TcpIngress, HttpsIngress]`
 
 ## v0.3.2
 
