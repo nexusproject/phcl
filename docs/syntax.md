@@ -147,6 +147,20 @@ user_data = hcl_file("${path.module}/scripts/bootstrap.sh")
 This differs from helpers in [`phcl.runtime`](./runtime.md), which read files
 on the Python side during PHCL generation.
 
+## `hcl_format(...)`
+
+`hcl_format(...)` is a wrapped HCL `format(...)` call for building target-side
+strings from structural PHCL/Python arguments.
+
+Example:
+
+```python
+from phcl.syntax import hcl, hcl_format
+
+
+resource_arn = hcl_format("%s/*", hcl("aws_s3_bucket.frontend.arn"))
+```
+
 ## `hcl_templatefile(...)`
 
 `hcl_templatefile(...)` is a wrapped HCL function for target-side template
