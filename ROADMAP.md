@@ -30,17 +30,15 @@ contract. Future version ranges are provisional and may change.
 - `heredoc(...)` / `render_file(...)`
 - Deprecation warning reporting
 
-### Planned
-
 #### 0.4.x: Block/Data Composition
-
-Focus:
 
 - `dict_block(...)`
 - `block_dict(...)`
 - `json_block(...)` / `yaml_block(...)`
 - Mapping-backed `Block` bases
 - External config/resource fragments
+
+### Planned
 
 #### 0.5.x: Declaration Generation and Materialization
 
