@@ -9,7 +9,15 @@ the generated output. They run while PHCL is building the final HCL.
 Typical imports:
 
 ```python
-from phcl.runtime import block_dict, dict_block, heredoc, path_module, render_file
+from phcl.runtime import (
+    block_dict,
+    dict_block,
+    heredoc,
+    json_block,
+    path_module,
+    render_file,
+    yaml_block,
+)
 ```
 
 ## Included Helpers
@@ -19,6 +27,8 @@ from phcl.runtime import block_dict, dict_block, heredoc, path_module, render_fi
 - `path_module()`
 - `heredoc(...)`
 - `dict_block(...)`
+- `json_block(...)`
+- `yaml_block(...)`
 - `block_dict(...)`
 - `render_file(...)`
 
@@ -124,6 +134,40 @@ tags = block_dict(Tags(Name="api"))
 The first version is shallow: it returns PHCL attributes as-is, preserving
 embedded `Expression`, `Reference`, and nested `Block` values.
 
+## File-Backed Block Helpers
+
+`json_block(...)` and `yaml_block(...)` build on top of `dict_block(...)`: they
+read a JSON/YAML mapping, optionally select a nested mapping with `at=...`, and
+return a generated `Block` base class.
+
+When the loaded fragment can be used as-is, assign it directly:
+
+```python
+CONFIG = path_module().parent / "config" / "envs.yaml"
+
+Config = yaml_block(CONFIG, at=ENV)
+```
+
+For nested data, pass a tuple or list of mapping keys:
+
+```python
+PublicSubnetConfig = yaml_block(
+    CONFIG,
+    at=(ENV, "network", "public", "subnet"),
+)
+```
+
+When the loaded fragment needs local defaults or overrides, refine it through
+normal declarative inheritance:
+
+```python
+class Config(yaml_block(CONFIG, at=ENV)):
+    backend_ami_id = ""
+    key_pair_name = ""
+```
+
+Both forms treat file-backed data as a composable declaration fragment.
+
 ## `render_file(...)`
 
 `render_file(...)` reads a file, optionally applies `string.Template`
@@ -132,7 +176,15 @@ substitution, and returns either:
 - an HCL heredoc expression by default
 - or a normal Python string when `heredoc=False`
 
+Template placeholders use Python's `string.Template` syntax: `$name` or
+`${name}`.
+
 Example:
+
+```text
+#!/usr/bin/env bash
+echo "deploying ${db_name} in ${aws_region}"
+```
 
 ```python
 from phcl.runtime import path_module, render_file
