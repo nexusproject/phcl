@@ -231,6 +231,18 @@ Nested HCL blocks are represented by putting `Block(...)` values inside attribut
 config = Block(path="/srv/app")
 ```
 
+Reusable `Block` classes can also be used directly in nested block position.
+PHCL materializes them with no constructor arguments:
+
+```python
+class HttpIngress(Block):
+    from_port = 80
+    to_port = 80
+
+
+ingress = [HttpIngress]
+```
+
 Repeated nested blocks are represented by lists of blocks:
 
 ```hcl
