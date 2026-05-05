@@ -8,10 +8,14 @@ rendered as HCL expressions in the output.
 from __future__ import annotations
 
 import inspect
+import keyword
 import warnings
+from collections.abc import Mapping
 from pathlib import Path
 from string import Template
+from typing import Any
 
+from .core import Block
 from .core.expression import Expression, hcl
 
 
@@ -66,6 +70,41 @@ def multiline(value: str, marker: str = "EOF") -> Expression:
     return heredoc(value, marker=marker)
 
 
+def dict_block(data: Mapping[str, Any]) -> type[Block]:
+    if not isinstance(data, Mapping):
+        raise TypeError("dict_block(...) expects a mapping")
+
+    attrs = {}
+    for key, value in data.items():
+        if not isinstance(key, str):
+            raise TypeError("dict_block(...) keys must be strings")
+        if not key.isidentifier() or keyword.iskeyword(key):
+            raise ValueError("dict_block(...) keys must be valid Python identifiers")
+        if key.startswith("_"):
+            raise ValueError("Attributes starting with '_' are reserved")
+        attrs[key] = value
+
+    return type(
+        "DictBlock",
+        (Block,),
+        {
+            "__module__": __name__,
+            "_phcl_abstract": True,
+            **attrs,
+        },
+    )
+
+
+def block_dict(block: Block | type[Block]) -> dict[str, Any]:
+    if isinstance(block, type) and issubclass(block, Block):
+        block = block()
+
+    if not isinstance(block, Block):
+        raise TypeError("block_dict(...) expects a Block instance or Block class")
+
+    return dict(block._phcl_attributes)
+
+
 def render_file(
     path: str | Path,
     *,
@@ -102,4 +141,11 @@ def render_file(
     return rendered
 
 
-__all__ = ["path_module", "heredoc", "multiline", "render_file"]
+__all__ = [
+    "path_module",
+    "heredoc",
+    "multiline",
+    "dict_block",
+    "block_dict",
+    "render_file",
+]
