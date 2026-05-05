@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "phcl"
-version = "0.4.0"
+version = "0.4.1"
 description = "Python-powered structural DSL for authoring native HCL2."
 authors = [
     {name = "Dmitry Sergeev",email = "realnexusway@gmail.com"}
@@ -12,7 +12,9 @@ authors = [
 license = "MIT"
 readme = "README.md"
 requires-python = ">=3.9"
-dependencies = []
+dependencies = [
+    "ruamel.yaml>=0.18",
+]
 
 [project.optional-dependencies]
 terraform = [

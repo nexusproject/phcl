@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.4.1
+
+- Added `json_block(...)` and `yaml_block(...)` helpers for building `Block` bases from file-backed JSON/YAML mappings
+- Added support for external config/resource fragments built on top of the 0.4.0 block/data composition primitives
+
 ## v0.4.0
 
 - Added `dict_block(...)` for building generated `Block` bases from mappings
