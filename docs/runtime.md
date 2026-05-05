@@ -9,7 +9,7 @@ the generated output. They run while PHCL is building the final HCL.
 Typical imports:
 
 ```python
-from phcl.runtime import heredoc, path_module, render_file
+from phcl.runtime import block_dict, dict_block, heredoc, path_module, render_file
 ```
 
 ## Included Helpers
@@ -18,6 +18,8 @@ from phcl.runtime import heredoc, path_module, render_file
 
 - `path_module()`
 - `heredoc(...)`
+- `dict_block(...)`
+- `block_dict(...)`
 - `render_file(...)`
 
 The older `multiline(...)` name remains available as a deprecated
@@ -57,6 +59,70 @@ script = heredoc("echo hello\necho world")
 
 This is useful when content already exists on the Python side but should be
 emitted as an HCL heredoc instead of a quoted string.
+
+## `dict_block(...)`
+
+`dict_block(...)` turns an existing mapping into a generated `Block` base class.
+
+It is a bridge from plain Python data into PHCL's composable declaration
+fragment model.
+
+Use it when Python-side data already has the shape of PHCL attributes and local
+class declarations should be able to override or extend it.
+Mapping keys must be valid Python identifiers and cannot start with `_`.
+
+Example:
+
+```python
+from phcl.runtime import dict_block
+
+
+class SubnetDefaults(dict_block({"cidr_block": "10.0.1.0/24"})):
+    map_public_ip_on_launch = True
+```
+
+Local class attributes override values from the mapping through normal Python
+inheritance.
+
+`dict_block(...)` is for block-shaped data, not arbitrary map construction.
+Its keys become PHCL/HCL block attributes, so they must be valid declaration
+attribute names. If a value needs map/object keys that are not valid attributes,
+keep that value as a normal Python `dict` instead.
+
+Example:
+
+```python
+policy_condition = {
+    "AWS:SourceArn": topic_arn,
+}
+```
+
+## `block_dict(...)`
+
+`block_dict(...)` converts assembled `Block` attributes back into a normal
+mapping.
+
+This is useful when a `Block` is authored as a composable declaration fragment
+but the surrounding HCL attribute expects an object-like value rather than a
+nested block.
+
+Example:
+
+```python
+from phcl.core import Block
+from phcl.runtime import block_dict
+
+
+class Tags(Block):
+    Project = "phcl"
+    ManagedBy = "PHCL"
+
+
+tags = block_dict(Tags(Name="api"))
+```
+
+The first version is shallow: it returns PHCL attributes as-is, preserving
+embedded `Expression`, `Reference`, and nested `Block` values.
 
 ## `render_file(...)`
 

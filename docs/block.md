@@ -26,6 +26,11 @@ This is the important part for PHCL:
 
 PHCL's `Block` is the core structural primitive built around this shape.
 
+It also serves as a composable declaration fragment: an HCL-shaped body that
+can be defined once, refined through declarative inheritance, instantiated with
+local overrides, nested, repeated, and reused before it is attached to a final
+top-level declaration.
+
 ## HCL Block Shape
 
 A block has:
@@ -102,6 +107,11 @@ Here:
 - labels are optional and added separately when needed
 
 `Block` is the generic structural primitive.
+
+It is also PHCL's smallest reusable declaration unit. A `Block` can describe a
+complete nested body on its own, or it can be used as a base for more specific
+fragments through ordinary Python inheritance. In that form, inheritance is not
+just code reuse: it is declarative refinement of an HCL body.
 
 In practice, it is most useful for:
 
