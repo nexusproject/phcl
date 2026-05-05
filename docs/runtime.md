@@ -157,6 +157,9 @@ PublicSubnetConfig = yaml_block(
 )
 ```
 
+A string `at` value is one literal mapping key. Dotted strings are not split
+into nested paths; use a tuple or list when selecting nested data.
+
 When the loaded fragment needs local defaults or overrides, refine it through
 normal declarative inheritance:
 

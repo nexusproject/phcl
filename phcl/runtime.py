@@ -101,32 +101,71 @@ def dict_block(data: Mapping[str, Any]) -> type[Block]:
     )
 
 
+def _normalize_selector(at: _Selector | None) -> list[str]:
+    if at is None:
+        return []
+    if isinstance(at, str):
+        return [at]
+    if not isinstance(at, (list, tuple)):
+        raise TypeError("at must be a string key or a list/tuple of string keys")
+
+    path = list(at)
+    if not all(isinstance(key, str) for key in path):
+        raise TypeError("at must contain only string keys")
+    return path
+
+
+def _format_selection(path: list[str]) -> str:
+    if not path:
+        return "root"
+    if len(path) == 1:
+        return f"at={path[0]!r}"
+    return f"at={tuple(path)!r}"
+
+
 def _select_mapping(data: Any, *, at: _Selector | None, source: Path) -> Mapping[str, Any]:
     selected = data
-    if at is not None:
-        path = [at] if isinstance(at, str) else list(at)
-        for key in path:
-            if not isinstance(selected, Mapping):
-                raise TypeError(
-                    f"{source} selection at {key!r} cannot continue through "
-                    f"{type(selected).__name__}"
-                )
-            try:
-                selected = selected[key]
-            except KeyError as exc:
-                raise KeyError(f"{source} does not contain mapping key {key!r}") from exc
+    path = _normalize_selector(at)
+    visited: list[str] = []
+    for key in path:
+        if not isinstance(selected, Mapping):
+            raise TypeError(
+                f"{source} selection {_format_selection(visited)} cannot "
+                f"continue at {key!r}; got {type(selected).__name__}"
+            )
+        try:
+            selected = selected[key]
+        except KeyError as exc:
+            raise KeyError(
+                f"{source} selection {_format_selection(visited + [key])} "
+                f"does not exist"
+            ) from exc
+        visited.append(key)
 
     if not isinstance(selected, Mapping):
-        location = "root" if at is None else f"selection {at!r}"
-        raise TypeError(f"{source} {location} must be a mapping")
+        raise TypeError(
+            f"{source} selection {_format_selection(path)} must be a mapping; "
+            f"got {type(selected).__name__}"
+        )
 
     return selected
+
+
+def _file_block(data: Any, *, at: _Selector | None, source: Path) -> type[Block]:
+    selected = _select_mapping(data, at=at, source=source)
+    try:
+        return dict_block(selected)
+    except (TypeError, ValueError) as exc:
+        raise type(exc)(
+            f"{source} selection {_format_selection(_normalize_selector(at))} "
+            f"contains invalid PHCL block attributes: {exc}"
+        ) from exc
 
 
 def json_block(path: _PathLike, *, at: _Selector | None = None) -> type[Block]:
     source = Path(path)
     data = json.loads(source.read_text(encoding="utf-8"))
-    return dict_block(_select_mapping(data, at=at, source=source))
+    return _file_block(data, at=at, source=source)
 
 
 def yaml_block(path: _PathLike, *, at: _Selector | None = None) -> type[Block]:
@@ -134,7 +173,7 @@ def yaml_block(path: _PathLike, *, at: _Selector | None = None) -> type[Block]:
 
     source = Path(path)
     data = YAML(typ="safe").load(source.read_text(encoding="utf-8"))
-    return dict_block(_select_mapping(data, at=at, source=source))
+    return _file_block(data, at=at, source=source)
 
 
 def block_dict(block: Block | type[Block]) -> dict[str, Any]:
