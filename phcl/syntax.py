@@ -31,6 +31,10 @@ def hcl_templatefile(path: str | Expression, vars: _HCLValue) -> Expression:
     return hcl_call("templatefile", path, vars)
 
 
+def hcl_format(format: str | Expression, *args: _HCLValue) -> Expression:
+    return hcl_call("format", format, *args)
+
+
 def jsonencode(value: _HCLValue) -> Expression:
     warnings.warn(
         "`jsonencode(...)` is deprecated and will be removed in a future "
@@ -57,6 +61,7 @@ __all__ = [
     "hcl",
     "hcl_call",
     "hcl_file",
+    "hcl_format",
     "hcl_jsonencode",
     "hcl_templatefile",
     "hcl_yamlencode",
