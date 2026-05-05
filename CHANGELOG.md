@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.4.2
+
+- Added `hcl_format(...)` as a typed wrapper for HCL `format(...)` calls
+- Improved `json_block(...)` and `yaml_block(...)` diagnostics for `at` selections and invalid block-shaped mappings
+- Documented `at=(...)` nested selection for file-backed block helpers
+
 ## v0.4.1
 
 - Added `json_block(...)` and `yaml_block(...)` helpers for building `Block` bases from file-backed JSON/YAML mappings
