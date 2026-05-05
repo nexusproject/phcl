@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.4.0
+
+- Added `dict_block(...)` for building generated `Block` bases from mappings
+- Added `block_dict(...)` for converting assembled `Block` attributes back into mappings
+
 ## v0.3.2
 
 - Added `hcl_call(...)` for building arbitrary HCL function calls from PHCL/Python values
