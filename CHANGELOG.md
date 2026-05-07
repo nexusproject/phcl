@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.4.3
+
+- Added `path_target()` for accessing the active `phcl build <target>` directory during generation
+- Improved `dict_block(...)` validation diagnostics for invalid PHCL block attribute keys
+- Clarified `dict_block(...)` documentation for block-shaped mappings versus arbitrary object maps
+- Shortened file-backed block diagnostics relative to the active build target when possible
+
 ## v0.4.2
 
 - Added `hcl_format(...)` as a typed wrapper for HCL `format(...)` calls
