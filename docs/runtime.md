@@ -15,6 +15,7 @@ from phcl.runtime import (
     heredoc,
     json_block,
     path_module,
+    path_target,
     render_file,
     yaml_block,
 )
@@ -25,6 +26,7 @@ from phcl.runtime import (
 `phcl.runtime` currently exposes:
 
 - `path_module()`
+- `path_target()`
 - `heredoc(...)`
 - `dict_block(...)`
 - `json_block(...)`
@@ -52,6 +54,23 @@ from phcl.runtime import path_module
 
 
 MODULE_DIR = path_module()
+```
+
+## `path_target()`
+
+`path_target()` returns the current `phcl build <target>` directory as a Python
+`Path`.
+
+Use `path_module()` for paths relative to the current source file. Use
+`path_target()` only when code intentionally needs the active build target.
+
+Example:
+
+```python
+from phcl.runtime import path_target
+
+
+TARGET_DIR = path_target()
 ```
 
 ## `heredoc(...)`
