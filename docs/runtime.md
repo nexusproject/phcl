@@ -93,12 +93,11 @@ emitted as an HCL heredoc instead of a quoted string.
 
 `dict_block(...)` turns an existing mapping into a generated `Block` base class.
 
-It is a bridge from plain Python data into PHCL's composable declaration
+It serves as a bridge from plain Python data into PHCL's composable declaration
 fragment model.
 
-Use it when Python-side data already has the shape of PHCL attributes and local
-class declarations should be able to override or extend it.
-Mapping keys must be valid Python identifiers and cannot start with `_`.
+Use it when Python-side data already has the shape of a PHCL block body and
+local class declarations should be able to override or extend it.
 
 Example:
 
@@ -113,17 +112,21 @@ class SubnetDefaults(dict_block({"cidr_block": "10.0.1.0/24"})):
 Local class attributes override values from the mapping through normal Python
 inheritance.
 
-`dict_block(...)` is for block-shaped data, not arbitrary map construction.
-Its keys become PHCL/HCL block attributes, so they must be valid declaration
-attribute names. If a value needs map/object keys that are not valid attributes,
-keep that value as a normal Python `dict` instead.
+Because mapping keys become PHCL block attributes, each key must be a valid PHCL
+block attribute name: a string that can become a normal Python class attribute
+on a `Block`, is not a Python keyword, and does not start with `_`.
 
-Example:
+Keys such as `"app-name"` or `"AWS:SourceArn"` are valid object/map keys in
+some target configurations, but they are not valid PHCL block attribute names.
+A mapping containing those keys will be rejected by `dict_block(...)`.
+
+Examples:
 
 ```python
-policy_condition = {
-    "AWS:SourceArn": topic_arn,
-}
+dict_block({"cidr_block": "10.0.1.0/24"})  # valid
+dict_block({"app-name": "api"})            # invalid
+dict_block({"class": "api"})               # invalid
+dict_block({"_secret": "nope"})            # invalid
 ```
 
 ## `block_dict(...)`
