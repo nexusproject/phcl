@@ -37,6 +37,8 @@ contract. Future version ranges are provisional and may change.
 - `json_block(...)` / `yaml_block(...)`
 - Mapping-backed `Block` bases
 - External config/resource fragments
+- Build-target runtime context via `path_target()`
+- Validation and diagnostics for block-shaped mappings
 
 ### Planned
 
