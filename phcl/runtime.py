@@ -167,28 +167,40 @@ def _format_selection(path: list[str]) -> str:
     return f"at={tuple(path)!r}"
 
 
+def _format_source(source: Path) -> str:
+    resolved = source.resolve()
+    target = _BUILD_TARGET.get()
+    if target is not None:
+        try:
+            return str(resolved.relative_to(target))
+        except ValueError:
+            pass
+    return str(source)
+
+
 def _select_mapping(data: Any, *, at: _Selector | None, source: Path) -> Mapping[str, Any]:
+    source_label = _format_source(source)
     selected = data
     path = _normalize_selector(at)
     visited: list[str] = []
     for key in path:
         if not isinstance(selected, Mapping):
             raise TypeError(
-                f"{source} selection {_format_selection(visited)} cannot "
+                f"{source_label} selection {_format_selection(visited)} cannot "
                 f"continue at {key!r}; got {type(selected).__name__}"
             )
         try:
             selected = selected[key]
         except KeyError as exc:
             raise KeyError(
-                f"{source} selection {_format_selection(visited + [key])} "
+                f"{source_label} selection {_format_selection(visited + [key])} "
                 f"does not exist"
             ) from exc
         visited.append(key)
 
     if not isinstance(selected, Mapping):
         raise TypeError(
-            f"{source} selection {_format_selection(path)} must be a mapping; "
+            f"{source_label} selection {_format_selection(path)} must be a mapping; "
             f"got {type(selected).__name__}"
         )
 
@@ -201,7 +213,7 @@ def _file_block(data: Any, *, at: _Selector | None, source: Path) -> type[Block]
         return dict_block(selected)
     except (TypeError, ValueError) as exc:
         raise type(exc)(
-            f"{source} selection {_format_selection(_normalize_selector(at))} "
+            f"{_format_source(source)} selection {_format_selection(_normalize_selector(at))} "
             f"contains invalid PHCL block attributes: {exc}"
         ) from exc
 

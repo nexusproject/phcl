@@ -174,6 +174,38 @@ class PHCL:
     assert result.status == "skip"
 
 
+def test_compile_file_formats_file_backed_errors_relative_to_build_target(tmp_path):
+    source = write_file(
+        tmp_path / "src" / "invalid.py",
+        """
+from phcl.runtime import path_module, yaml_block
+
+Invalid = yaml_block(path_module() / "invalid.yaml", at="dev")
+""".strip()
+        + "\n",
+    )
+    write_file(
+        tmp_path / "src" / "invalid.yaml",
+        """
+dev:
+  app-name: api
+""".strip()
+        + "\n",
+    )
+
+    result = compile_file(
+        source,
+        base=tmp_path / "src",
+        out_dir=None,
+        ext=".tf",
+        stdout=False,
+    )
+
+    assert result.status == "fail"
+    assert "invalid.yaml selection at='dev'" in result.detail
+    assert str(tmp_path) not in result.detail
+
+
 def test_compile_file_writes_rendered_output_from_phcl_config(tmp_path):
     source = write_file(
         tmp_path / "service.py",
