@@ -104,18 +104,34 @@ def multiline(value: str, marker: str = "EOF") -> Expression:
     return heredoc(value, marker=marker)
 
 
+def _validate_block_attribute_name(name: Any) -> str:
+    if not isinstance(name, str):
+        raise TypeError(
+            f"PHCL block attribute name {name!r} must be a string"
+        )
+    if not name.isidentifier() or keyword.iskeyword(name):
+        raise ValueError(
+            f"PHCL block attribute name {name!r} must be a valid Python "
+            "identifier and cannot be a Python keyword"
+        )
+    if name.startswith("_"):
+        raise ValueError(
+            f"PHCL block attribute name {name!r} is reserved because names "
+            "cannot start with '_'"
+        )
+    return name
+
+
 def dict_block(data: Mapping[str, Any]) -> type[Block]:
     if not isinstance(data, Mapping):
         raise TypeError("dict_block(...) expects a mapping")
 
     attrs = {}
     for key, value in data.items():
-        if not isinstance(key, str):
-            raise TypeError("dict_block(...) keys must be strings")
-        if not key.isidentifier() or keyword.iskeyword(key):
-            raise ValueError("dict_block(...) keys must be valid Python identifiers")
-        if key.startswith("_"):
-            raise ValueError("Attributes starting with '_' are reserved")
+        try:
+            key = _validate_block_attribute_name(key)
+        except (TypeError, ValueError) as exc:
+            raise type(exc)(f"dict_block(...) invalid key: {exc}") from exc
         attrs[key] = value
 
     return type(

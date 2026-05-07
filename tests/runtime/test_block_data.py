@@ -64,22 +64,22 @@ def test_dict_block_rejects_non_mapping_values():
 
 
 def test_dict_block_rejects_non_string_keys():
-    with pytest.raises(TypeError, match="keys must be strings"):
+    with pytest.raises(TypeError, match=r"invalid key: PHCL block attribute name 1 must be a string"):
         dict_block({1: "api"})
 
 
 def test_dict_block_rejects_keys_that_are_not_python_identifiers():
-    with pytest.raises(ValueError, match="valid Python identifiers"):
+    with pytest.raises(ValueError, match=r"invalid key: PHCL block attribute name 'not-valid'"):
         dict_block({"not-valid": "api"})
 
 
 def test_dict_block_rejects_python_keywords():
-    with pytest.raises(ValueError, match="valid Python identifiers"):
+    with pytest.raises(ValueError, match=r"cannot be a Python keyword"):
         dict_block({"class": "api"})
 
 
 def test_dict_block_rejects_reserved_keys():
-    with pytest.raises(ValueError, match="reserved"):
+    with pytest.raises(ValueError, match=r"names cannot start with '_'"):
         dict_block({"_secret": "nope"})
 
 
