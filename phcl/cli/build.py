@@ -6,6 +6,7 @@ from typing import Optional
 
 from phcl.core.registry import Registry
 from phcl.render.hcl2 import build_hcl
+from phcl.runtime import _reset_build_target, _set_build_target
 
 from .config import DEFAULT_OUTPUT_EXTENSION, load_file_config, normalize_extension
 from .loading import execute_file, execute_module, resolve_module_target
@@ -71,96 +72,100 @@ def output_path_for(source: Path, base: Path, out_dir: Optional[Path], ext: str)
 def compile_file(source: Path, *, base: Path, out_dir: Optional[Path], ext: Optional[str], stdout: bool) -> BuildResult:
     Registry.reset()
     current_module_name = None
-    with warnings.catch_warnings(record=True) as warning_records:
-        warnings.simplefilter("always", DeprecationWarning)
+    target_token = _set_build_target(base)
+    try:
+        with warnings.catch_warnings(record=True) as warning_records:
+            warnings.simplefilter("always", DeprecationWarning)
 
-        try:
-            resolved = resolve_module_target(source, base)
-            if resolved is not None:
-                import_root, module_name = resolved
-                current_module_name = module_name
-                module_globals = execute_module(source, import_root, module_name)
-            else:
-                import_root = base if base.is_dir() else source.parent
-                module_globals = execute_file(source, import_root)
-                current_module_name = module_globals.get("__name__")
-        except Exception as exc:
+            try:
+                resolved = resolve_module_target(source, base)
+                if resolved is not None:
+                    import_root, module_name = resolved
+                    current_module_name = module_name
+                    module_globals = execute_module(source, import_root, module_name)
+                else:
+                    import_root = base if base.is_dir() else source.parent
+                    module_globals = execute_file(source, import_root)
+                    current_module_name = module_globals.get("__name__")
+            except Exception as exc:
+                Registry.reset()
+                return BuildResult(
+                    source=source,
+                    output=None,
+                    status="fail",
+                    detail=str(exc),
+                    warnings=collect_build_warnings(warning_records),
+                )
+
+            try:
+                file_config = load_file_config(module_globals)
+            except Exception as exc:
+                Registry.reset()
+                return BuildResult(
+                    source=source,
+                    output=None,
+                    status="fail",
+                    detail=str(exc),
+                    warnings=collect_build_warnings(warning_records),
+                )
+
+            if file_config is None:
+                Registry.reset()
+                return BuildResult(
+                    source=source,
+                    output=None,
+                    status="ignore",
+                    warnings=collect_build_warnings(warning_records),
+                )
+
+            if file_config.skip:
+                Registry.reset()
+                return BuildResult(
+                    source=source,
+                    output=None,
+                    status="skip",
+                    detail="disabled",
+                    warnings=collect_build_warnings(warning_records),
+                )
+
+            registry = Registry.renderables(module_name=current_module_name)
+            if not registry:
+                Registry.reset()
+                return BuildResult(
+                    source=source,
+                    output=None,
+                    status="skip",
+                    detail="registry is empty",
+                    warnings=collect_build_warnings(warning_records),
+                )
+
+            output_ext = normalize_extension(ext) if ext else (file_config.extension or DEFAULT_OUTPUT_EXTENSION)
+
+            rendered = build_hcl(registry, indent=file_config.indentation)
             Registry.reset()
+
+            if stdout:
+                import sys
+
+                sys.stdout.write(rendered)
+                return BuildResult(
+                    source=source,
+                    output=None,
+                    status="stdout",
+                    warnings=collect_build_warnings(warning_records),
+                )
+
+            destination = output_path_for(source, base, out_dir, output_ext)
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            destination.write_text(rendered, encoding="utf-8")
             return BuildResult(
                 source=source,
-                output=None,
-                status="fail",
-                detail=str(exc),
+                output=destination,
+                status="write",
                 warnings=collect_build_warnings(warning_records),
             )
-
-        try:
-            file_config = load_file_config(module_globals)
-        except Exception as exc:
-            Registry.reset()
-            return BuildResult(
-                source=source,
-                output=None,
-                status="fail",
-                detail=str(exc),
-                warnings=collect_build_warnings(warning_records),
-            )
-
-        if file_config is None:
-            Registry.reset()
-            return BuildResult(
-                source=source,
-                output=None,
-                status="ignore",
-                warnings=collect_build_warnings(warning_records),
-            )
-
-        if file_config.skip:
-            Registry.reset()
-            return BuildResult(
-                source=source,
-                output=None,
-                status="skip",
-                detail="disabled",
-                warnings=collect_build_warnings(warning_records),
-            )
-
-        registry = Registry.renderables(module_name=current_module_name)
-        if not registry:
-            Registry.reset()
-            return BuildResult(
-                source=source,
-                output=None,
-                status="skip",
-                detail="registry is empty",
-                warnings=collect_build_warnings(warning_records),
-            )
-
-        output_ext = normalize_extension(ext) if ext else (file_config.extension or DEFAULT_OUTPUT_EXTENSION)
-
-        rendered = build_hcl(registry, indent=file_config.indentation)
-        Registry.reset()
-
-        if stdout:
-            import sys
-
-            sys.stdout.write(rendered)
-            return BuildResult(
-                source=source,
-                output=None,
-                status="stdout",
-                warnings=collect_build_warnings(warning_records),
-            )
-
-        destination = output_path_for(source, base, out_dir, output_ext)
-        destination.parent.mkdir(parents=True, exist_ok=True)
-        destination.write_text(rendered, encoding="utf-8")
-        return BuildResult(
-            source=source,
-            output=destination,
-            status="write",
-            warnings=collect_build_warnings(warning_records),
-        )
+    finally:
+        _reset_build_target(target_token)
 
 
 def command_build(args) -> int:

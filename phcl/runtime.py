@@ -13,9 +13,10 @@ import keyword
 import os
 import warnings
 from collections.abc import Mapping
+from contextvars import ContextVar, Token
 from pathlib import Path
 from string import Template
-from typing import Any, Union
+from typing import Any, Optional, Union
 
 from .core import Block
 from .core.expression import Expression, hcl
@@ -23,6 +24,18 @@ from .core.expression import Expression, hcl
 
 _PathLike = Union[str, os.PathLike[str]]
 _Selector = Union[str, list[str], tuple[str, ...]]
+_BUILD_TARGET: ContextVar[Optional[Path]] = ContextVar(
+    "phcl_build_target",
+    default=None,
+)
+
+
+def _set_build_target(path: Path) -> Token[Optional[Path]]:
+    return _BUILD_TARGET.set(path.resolve())
+
+
+def _reset_build_target(token: Token[Optional[Path]]) -> None:
+    _BUILD_TARGET.reset(token)
 
 
 def path_module() -> Path:
@@ -44,6 +57,21 @@ def path_module() -> Path:
         raise RuntimeError("path_module() requires the calling module to define __file__")
 
     return Path(caller_file).resolve().parent
+
+
+def path_target() -> Path:
+    """
+    Return the current ``phcl build <target>`` directory.
+
+    This value is available while PHCL source files are loaded by the CLI. It
+    is intentionally tied to the active build invocation, unlike
+    ``path_module()`` which is tied to the current source module.
+    """
+
+    target = _BUILD_TARGET.get()
+    if target is None:
+        raise RuntimeError("path_target() is only available during phcl build")
+    return target
 
 
 def _heredoc(value: str, marker: str) -> Expression:
@@ -224,6 +252,7 @@ def render_file(
 
 __all__ = [
     "path_module",
+    "path_target",
     "heredoc",
     "multiline",
     "dict_block",

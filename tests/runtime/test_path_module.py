@@ -2,6 +2,10 @@ import importlib.util
 import sys
 from pathlib import Path
 
+import pytest
+
+from phcl.runtime import path_target
+
 
 def load_module(path: Path, name: str):
     spec = importlib.util.spec_from_file_location(name, path)
@@ -30,3 +34,8 @@ MODULE_DIR = path_module()
     module = load_module(module_path, "test_runtime_module")
 
     assert module.MODULE_DIR == module_path.parent.resolve()
+
+
+def test_path_target_requires_phcl_build_context():
+    with pytest.raises(RuntimeError, match="phcl build"):
+        path_target()

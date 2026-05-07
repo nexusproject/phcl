@@ -147,6 +147,33 @@ class PHCL:
     assert result.detail == "disabled"
 
 
+def test_compile_file_exposes_path_target_during_module_loading(tmp_path):
+    source = write_file(
+        tmp_path / "src" / "check_target.py",
+        f"""
+from pathlib import Path
+from phcl.runtime import path_target
+
+if path_target() != Path({str(tmp_path / "src")!r}):
+    raise RuntimeError(f"unexpected target: {{path_target()}}")
+
+class PHCL:
+    skip = True
+""".strip()
+        + "\n",
+    )
+
+    result = compile_file(
+        source,
+        base=tmp_path / "src",
+        out_dir=None,
+        ext=".tf",
+        stdout=False,
+    )
+
+    assert result.status == "skip"
+
+
 def test_compile_file_writes_rendered_output_from_phcl_config(tmp_path):
     source = write_file(
         tmp_path / "service.py",
