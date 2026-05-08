@@ -172,6 +172,9 @@ alias style such as `from_`; names containing `-` cannot be represented as
 Python attributes at all and are better handled through data-backed block bases
 such as `dict_block(...)`.
 
+See [HCL Identifiers and Python Attribute Syntax](./hcl-python-identifiers.md)
+for details on these edge cases.
+
 PHCL reserves the single name `_` for reference accessors and names beginning
 with `_phcl_` for its own metadata. Other underscore-prefixed HCL attribute
 names are allowed.
