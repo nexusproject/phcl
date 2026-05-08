@@ -37,6 +37,9 @@ This allows PHCL to keep HCL-like structure while using Python for:
 The result is not an object wrapper around HCL.  
 It is Python used as a language for building declarations.
 
+PHCL is therefore more than HCL with inheritance. It is a structural authoring
+layer where HCL bodies become composable Python declaration fragments.
+
 At the same time, PHCL keeps declaration code highly recognizable and as close as possible to native HCL2.
 Blocks, attributes, references, and nested structure still read in a familiar way.
 You gain Python's expressive power without giving up the familiar shape of HCL-style authoring.

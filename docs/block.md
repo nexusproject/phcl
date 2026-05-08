@@ -26,10 +26,9 @@ This is the important part for PHCL:
 
 PHCL's `Block` is the core structural primitive built around this shape.
 
-It also serves as a composable declaration fragment: an HCL-shaped body that
-can be defined once, refined through declarative inheritance, instantiated with
-local overrides, nested, repeated, and reused before it is attached to a final
-top-level declaration.
+`Block` is PHCL's universal composition unit: a reusable declaration body that
+can be inherited, nested, repeated, converted, loaded from data, and eventually
+materialized into concrete declarations or declaration fragments.
 
 ## HCL Block Shape
 
