@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.4.4
+
+- Allowed `dict_block(...)` and file-backed block helpers to use valid HCL identifiers such as Python keywords and names containing `-`
+- Limited PHCL-reserved attribute names to `_` and the `_phcl_` prefix so ordinary underscore-prefixed HCL attributes are preserved
+- Added documentation explaining HCL identifiers versus Python attribute syntax
+
 ## v0.4.3
 
 - Added `path_target()` for accessing the active `phcl build <target>` directory during generation
