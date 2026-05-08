@@ -147,11 +147,20 @@ local.some_object["app-name"]
 That is not the same HCL syntax as `.app-name`. It is key/index access, not
 attribute traversal. PHCL can already express that form because the key is data.
 
-For Python-side object access, use Python's normal dynamic attribute access when
-a name cannot be written with dot syntax:
+For PHCL-first authoring, prefer working with Python-side attributes when the
+value exists in PHCL's declaration model. If a name cannot be written with dot
+syntax, normal dynamic attribute access is still available:
 
 ```python
 getattr(Config, "app-name")
+```
+
+The main exception is an HCL-computed attribute that exists only in the target
+tool's evaluation model. In that case, use an inline HCL expression when PHCL
+does not yet provide a structured reference helper for the exact traversal:
+
+```python
+hcl("resource.example.app-name")
 ```
 
 ## Reserved Names
