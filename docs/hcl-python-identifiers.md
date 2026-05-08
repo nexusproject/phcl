@@ -147,11 +147,6 @@ local.some_object["app-name"]
 That is not the same HCL syntax as `.app-name`. It is key/index access, not
 attribute traversal. PHCL can already express that form because the key is data.
 
-For a true HCL attribute traversal whose identifier contains `-`, PHCL does not
-currently provide a dedicated class-first traversal helper. If that becomes
-necessary, it should be added explicitly rather than pretending that bracket
-access is the same operation.
-
 For Python-side object access, use Python's normal dynamic attribute access when
 a name cannot be written with dot syntax:
 
