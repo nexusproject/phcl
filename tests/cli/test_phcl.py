@@ -188,7 +188,7 @@ Invalid = yaml_block(path_module() / "invalid.yaml", at="dev")
         tmp_path / "src" / "invalid.yaml",
         """
 dev:
-  app-name: api
+  AWS:SourceArn: api
 """.strip()
         + "\n",
     )

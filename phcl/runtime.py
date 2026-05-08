@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import inspect
 import json
-import keyword
 import os
 import warnings
 from collections.abc import Mapping
@@ -109,15 +108,19 @@ def _validate_block_attribute_name(name: Any) -> str:
         raise TypeError(
             f"PHCL block attribute name {name!r} must be a string"
         )
-    if not name.isidentifier() or keyword.iskeyword(name):
+    if name.startswith("-") or not name.replace("-", "_").isidentifier():
         raise ValueError(
-            f"PHCL block attribute name {name!r} must be a valid Python "
-            "identifier and cannot be a Python keyword"
+            f"PHCL block attribute name {name!r} must be a valid HCL "
+            "identifier"
         )
-    if name.startswith("_"):
+    if name == "_":
+        raise ValueError(
+            "PHCL block attribute name '_' is reserved"
+        )
+    if name.startswith("_phcl_"):
         raise ValueError(
             f"PHCL block attribute name {name!r} is reserved because names "
-            "cannot start with '_'"
+            "cannot start with '_phcl_'"
         )
     return name
 

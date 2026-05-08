@@ -48,9 +48,10 @@ def test_instance_attributes_override_class_attributes():
     assert attrs["region"] == "eu-west-1"
 
 
-def test_properties_are_included_but_methods_and_private_names_are_skipped():
+def test_properties_are_included_but_methods_and_phcl_names_are_skipped():
     class Config(Declarative):
         _secret = "hidden"
+        _phcl_internal = "skip"
         kind = "service"
 
         @property
@@ -63,8 +64,19 @@ def test_properties_are_included_but_methods_and_private_names_are_skipped():
     attrs = Config()._phcl_attributes
 
     assert attrs == {
+        "_secret": "hidden",
         "kind": "service",
         "computed": "service-computed",
+    }
+
+
+def test_single_underscore_name_is_reserved_for_phcl_accessors():
+    class Config(Declarative):
+        _ = "skip"
+        _secret = "hidden"
+
+    assert Config()._phcl_attributes == {
+        "_secret": "hidden",
     }
 
 

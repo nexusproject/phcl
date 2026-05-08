@@ -131,7 +131,9 @@ That means a property can compute derived declarative values from the local decl
 
 `Declarative` ignores:
 
-- private names
+- the single `_` name used by PHCL reference accessors
+- PHCL metadata names starting with `_phcl_`
+- Python dunder names such as `__module__`
 - methods
 
 ## Why It Exists

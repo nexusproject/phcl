@@ -123,21 +123,29 @@ class SubnetDefaults(dict_block({"cidr_block": "10.0.1.0/24"})):
 Local class attributes override values from the mapping through normal Python
 inheritance.
 
-Because mapping keys become PHCL block attributes, each key must be a valid PHCL
-block attribute name: a string that can become a normal Python class attribute
-on a `Block`, is not a Python keyword, and does not start with `_`.
+Because mapping keys become HCL body attributes, each key must be a valid HCL
+identifier. Unlike class-first PHCL attributes, `dict_block(...)` can carry
+valid HCL names that cannot be written as normal Python class attributes, such
+as names containing `-`.
 
-Keys such as `"app-name"` or `"AWS:SourceArn"` are valid object/map keys in
-some target configurations, but they are not valid PHCL block attribute names.
-A mapping containing those keys will be rejected by `dict_block(...)`.
+Keyword conflicts are uncommon but real in provider schemas. Dashed HCL
+identifiers are supported here mainly for HCL-spec compatibility and
+portability across dialects/providers.
+
+Keys such as `"AWS:SourceArn"` are valid object/map keys in some target
+configurations, but they are not valid HCL identifiers for block body
+attributes. A mapping containing those keys will be rejected by
+`dict_block(...)`.
 
 Examples:
 
 ```python
 dict_block({"cidr_block": "10.0.1.0/24"})  # valid
-dict_block({"app-name": "api"})            # invalid
-dict_block({"class": "api"})               # invalid
-dict_block({"_secret": "nope"})            # invalid
+dict_block({"app-name": "api"})            # valid: HCL allows "-"
+dict_block({"from": "noreply@example.com"})  # valid: Python keyword, HCL identifier
+dict_block({"_secret": "ok"})              # valid: HCL identifier
+dict_block({"AWS:SourceArn": "x"})         # invalid: not an HCL identifier
+dict_block({"_": "nope"})                  # invalid: reserved PHCL accessor
 ```
 
 ## `block_dict(...)`

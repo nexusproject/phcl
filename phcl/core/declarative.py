@@ -22,7 +22,9 @@ class Declarative:
                 continue
 
             for name, value in base.__dict__.items():
-                if name.startswith("_"):
+                if name == "_" or name.startswith("_phcl_") or (
+                    name.startswith("__") and name.endswith("__")
+                ):
                     continue
 
                 # skip methods, keep classes and properties

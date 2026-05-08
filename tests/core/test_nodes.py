@@ -33,9 +33,18 @@ def test_block_label_chains_and_tuple_labels_generate_the_same_class_name():
     assert Chained.__name__ == Packed.__name__
 
 
-def test_block_rejects_private_constructor_attributes():
+def test_block_allows_underscore_constructor_attributes():
+    assert Block(_secret="ok")._phcl_attributes["_secret"] == "ok"
+
+
+def test_block_rejects_phcl_constructor_attributes():
     with pytest.raises(ValueError, match="reserved"):
-        Block(_secret="nope")
+        Block(_phcl_secret="nope")
+
+
+def test_block_rejects_single_underscore_constructor_attribute():
+    with pytest.raises(ValueError, match="reserved"):
+        Block(_="nope")
 
 
 def test_block_spec_includes_class_name_label_and_nested_values():

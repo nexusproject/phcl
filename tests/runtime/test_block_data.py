@@ -68,19 +68,47 @@ def test_dict_block_rejects_non_string_keys():
         dict_block({1: "api"})
 
 
-def test_dict_block_rejects_keys_that_are_not_python_identifiers():
-    with pytest.raises(ValueError, match=r"invalid key: PHCL block attribute name 'not-valid'"):
-        dict_block({"not-valid": "api"})
+def test_dict_block_allows_hcl_identifiers_that_are_not_python_identifiers():
+    class Service(dict_block({"app-name": "api"})):
+        enabled = True
+
+    assert Service()._phcl_attributes == {
+        "app-name": "api",
+        "enabled": True,
+    }
 
 
-def test_dict_block_rejects_python_keywords():
-    with pytest.raises(ValueError, match=r"cannot be a Python keyword"):
-        dict_block({"class": "api"})
+def test_dict_block_allows_python_keywords_that_are_valid_hcl_identifiers():
+    class Service(dict_block({"from": "noreply@example.com"})):
+        pass
+
+    assert Service()._phcl_attributes == {
+        "from": "noreply@example.com",
+    }
 
 
-def test_dict_block_rejects_reserved_keys():
-    with pytest.raises(ValueError, match=r"names cannot start with '_'"):
-        dict_block({"_secret": "nope"})
+def test_dict_block_rejects_keys_that_are_not_hcl_identifiers():
+    with pytest.raises(ValueError, match=r"invalid key: PHCL block attribute name 'AWS:SourceArn'"):
+        dict_block({"AWS:SourceArn": "api"})
+
+
+def test_dict_block_allows_underscore_keys():
+    class Service(dict_block({"_secret": "ok"})):
+        pass
+
+    assert Service()._phcl_attributes == {
+        "_secret": "ok",
+    }
+
+
+def test_dict_block_rejects_phcl_reserved_keys():
+    with pytest.raises(ValueError, match=r"names cannot start with '_phcl_'"):
+        dict_block({"_phcl_secret": "nope"})
+
+
+def test_dict_block_rejects_single_underscore_key():
+    with pytest.raises(ValueError, match=r"attribute name '_' is reserved"):
+        dict_block({"_": "nope"})
 
 
 def test_block_dict_rejects_non_block_values():
@@ -178,7 +206,7 @@ def test_json_block_rejects_invalid_at_key_type(tmp_path):
 
 def test_json_block_uses_dict_block_key_validation(tmp_path):
     path = tmp_path / "config.json"
-    path.write_text('{"not-valid": "api"}', encoding="utf-8")
+    path.write_text('{"AWS:SourceArn": "api"}', encoding="utf-8")
 
     with pytest.raises(ValueError, match=r"selection root contains invalid PHCL block attributes"):
         json_block(path)

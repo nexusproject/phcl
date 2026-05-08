@@ -77,8 +77,10 @@ class Block(Declarative):
 
     def __init__(self, /, **kwargs):
         for k in kwargs:
-            if k.startswith("_"):
-                raise ValueError("Attributes starting with '_' are reserved")
+            if k == "_":
+                raise ValueError("Attribute '_' is reserved")
+            if k.startswith("_phcl_"):
+                raise ValueError("Attributes starting with '_phcl_' are reserved")
         self.__dict__.update(kwargs)
 
     def _phcl_normalize_value(self, value):

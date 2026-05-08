@@ -154,6 +154,29 @@ An HCL attribute has the shape:
 Identifier "=" Expression
 ```
 
+HCL body attribute names are identifiers, not Python identifiers. The two are
+usually the same in idiomatic Terraform-style schemas, but HCL also allows `-`
+in attribute and block type names, and Python keywords such as `from` or
+`return` are still ordinary HCL identifiers in body attribute positions.
+
+PHCL's class-first syntax uses Python class attributes, so the normal form is
+limited to names Python can write directly:
+
+```python
+class Config(Block):
+    region = "eu-central-1"
+```
+
+Names that are valid HCL but awkward or impossible as Python attributes need an
+escape hatch. Python keyword names can be represented by a future class-first
+alias style such as `from_`; names containing `-` cannot be represented as
+Python attributes at all and are better handled through data-backed block bases
+such as `dict_block(...)`.
+
+PHCL reserves the single name `_` for reference accessors and names beginning
+with `_phcl_` for its own metadata. Other underscore-prefixed HCL attribute
+names are allowed.
+
 In PHCL, plain literal attributes can be represented directly on a block instance:
 
 ```python
