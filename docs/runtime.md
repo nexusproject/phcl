@@ -47,6 +47,11 @@ Python `Path`.
 It is analogous in spirit to Terraform's `path.module`, but it is resolved on
 the Python side during PHCL generation.
 
+This differs from HCL/Terraform `path.module`: PHCL resolves `path_module()`
+from the PHCL source module, while HCL resolves `path.module` from the generated
+HCL module. Those locations can differ when generated files are written to a
+separate output directory or a different layout.
+
 Example:
 
 ```python
@@ -63,6 +68,12 @@ MODULE_DIR = path_module()
 
 Use `path_module()` for paths relative to the current source file. Use
 `path_target()` only when code intentionally needs the active build target.
+It is not a stable PHCL project root helper.
+
+The value depends on how generation is invoked. For example, `phcl build src`
+and running `phcl build .` from inside `src` can load the same PHCL files while
+producing different `path_target()` values. Use this helper only for rare cases
+that specifically need the current build target.
 
 Example:
 
