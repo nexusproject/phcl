@@ -117,7 +117,7 @@ spell directly.
 
 ## References
 
-The same distinction appears on the reference side.
+The reference side has a related but slightly different boundary.
 
 Python-compatible HCL attributes can use dot-style traversal:
 
@@ -125,15 +125,32 @@ Python-compatible HCL attributes can use dot-style traversal:
 Bucket._.arn
 ```
 
-Attributes that are not Python-compatible need a string-key traversal form on
-the HCL/reference tier:
+This renders as ordinary HCL traversal:
 
-```python
-Resource._["app-name"]
+```hcl
+aws_s3_bucket.bucket.arn
 ```
 
-That keeps the meaning explicit: dot access is Python syntax; item access
-carries an HCL attribute or key name as data.
+Bracket access is available when the HCL value being traversed is object-like or
+map-like and the key must be supplied as a string:
+
+```python
+SomeObject._["app-name"]
+```
+
+This renders as string-key access, for example:
+
+```hcl
+local.some_object["app-name"]
+```
+
+That is not the same HCL syntax as `.app-name`. It is key/index access, not
+attribute traversal. PHCL can already express that form because the key is data.
+
+For a true HCL attribute traversal whose identifier contains `-`, PHCL does not
+currently provide a dedicated class-first traversal helper. If that becomes
+necessary, it should be added explicitly rather than pretending that bracket
+access is the same operation.
 
 For Python-side object access, use Python's normal dynamic attribute access when
 a name cannot be written with dot syntax:
