@@ -229,9 +229,42 @@ def test_generate_preserves_original_value_objects():
     assert ServiceDev()._phcl_attributes["name"] == "api"
 
 
-def test_generate_rejects_non_mapping_values():
-    with pytest.raises(TypeError, match="mapping"):
-        generate(["dev"])
+def test_generate_materializes_declarations_from_list_with_positional_keys():
+    @abstract
+    class Resource(Node["example"]):
+        _phcl_kind = "resource"
+
+    @generate([
+        {"name": "api"},
+        {"name": "worker"},
+    ])
+    class Service(Resource):
+        name = this.value["name"]
+        generation_key = this.key
+        generation_index = this.index
+
+    Service0, Service1 = Registry.renderables()
+
+    assert Service0.__name__ == "Service_0"
+    assert Service1.__name__ == "Service_1"
+    assert Service0()._phcl_attributes == {
+        "name": "api",
+        "generation_key": "0",
+        "generation_index": 0,
+    }
+    assert Service1()._phcl_attributes == {
+        "name": "worker",
+        "generation_key": "1",
+        "generation_index": 1,
+    }
+
+
+def test_generate_rejects_unsupported_iterables():
+    with pytest.raises(TypeError, match="mapping or list"):
+        generate(("dev", "prod"))
+
+    with pytest.raises(TypeError, match="mapping or list"):
+        generate({"dev", "prod"})
 
 
 def test_generate_rejects_non_string_keys():

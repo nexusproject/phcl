@@ -245,14 +245,24 @@ def _resolve_this(value: Any, item: _GenerationItem) -> Any:
     return value
 
 
-def generate(data: Mapping[str, Any]):
-    if not isinstance(data, Mapping):
-        raise TypeError("generate(...) expects a mapping")
+def _generation_items(data: Mapping[str, Any] | list[Any]) -> list[_GenerationItem]:
+    if isinstance(data, Mapping):
+        return [
+            _GenerationItem(index=index, key=_validate_generation_key(key), value=value)
+            for index, (key, value) in enumerate(data.items())
+        ]
 
-    items = [
-        _GenerationItem(index=index, key=_validate_generation_key(key), value=value)
-        for index, (key, value) in enumerate(data.items())
-    ]
+    if isinstance(data, list):
+        return [
+            _GenerationItem(index=index, key=str(index), value=value)
+            for index, value in enumerate(data)
+        ]
+
+    raise TypeError("generate(...) expects a mapping or list")
+
+
+def generate(data: Mapping[str, Any] | list[Any]):
+    items = _generation_items(data)
 
     def decorator(cls: type[Block]) -> type[Block]:
         if not isinstance(cls, type) or not issubclass(cls, Block):
