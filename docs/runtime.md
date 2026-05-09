@@ -11,14 +11,16 @@ Typical imports:
 ```python
 from phcl.runtime import (
     block_dict,
-    derive,
     dict_block,
+    generate,
     heredoc,
     json_block,
     path_module,
     path_target,
     render_file,
+    this,
     yaml_block,
+    derive,
 )
 ```
 
@@ -29,6 +31,8 @@ from phcl.runtime import (
 - `path_module()`
 - `path_target()`
 - `heredoc(...)`
+- `generate(...)`
+- `this`
 - `derive(...)`
 - `dict_block(...)`
 - `json_block(...)`
@@ -102,13 +106,59 @@ script = heredoc("echo hello\necho world")
 This is useful when content already exists on the Python side but should be
 emitted as an HCL heredoc instead of a quoted string.
 
+## `generate(...)` and `this`
+
+`generate(...)` materializes multiple concrete declarations from one
+class-first declaration template.
+
+The first version accepts a mapping. Mapping keys become stable generation
+identity suffixes, and values remain the original Python values.
+
+Example:
+
+```python
+from phcl.runtime import generate, this
+from phcl.terraform import Resource
+
+
+@generate({
+    "dev": {"bucket": "app-dev"},
+    "prod": {"bucket": "app-prod"},
+})
+class Bucket(Resource["aws_s3_bucket"]):
+    bucket = this.value["bucket"]
+    tags = {
+        "Env": this.key,
+        "Index": this.index,
+    }
+```
+
+This materializes declarations with labels such as `bucket_dev` and
+`bucket_prod`: the normal class-derived trailing label is preserved, and the
+generation key is appended with `_`.
+
+Inside the generated class body:
+
+- `this.key` is the mapping key as a string.
+- `this.index` is the integer position in mapping order.
+- `this.value` is the original mapping value.
+
+`this` is only valid inside a class decorated with `@generate(...)`. Using it
+in a normal declaration is an error because there is no current generation
+item to resolve.
+
+Generation keys must be non-empty strings matching `[A-Za-z][A-Za-z0-9_]*`.
+Use a mapping when declaration identity matters; unordered collections such as
+sets are not accepted.
+
 ## `derive(...)`
 
-`derive(...)` materializes a concrete declaration class from an ancestor class,
-an explicit trailing label, and ordinary HCL body attributes.
+`derive(...)` materializes one concrete declaration class from an ancestor
+class, an explicit trailing label, and ordinary HCL body attributes.
 
-Use it when a declaration should be produced functionally while still following
-PHCL's class-first model.
+Most data-driven declaration materialization should use `generate(...)`.
+Use `derive(...)` for special cases where code needs to produce a single
+declaration functionally while still staying inside PHCL's class-first model.
 
 Example:
 
