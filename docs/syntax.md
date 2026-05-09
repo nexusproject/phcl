@@ -9,7 +9,7 @@ an expression helper, or a structural alias.
 Typical imports:
 
 ```python
-from phcl.syntax import B, abstract, generate, hcl, hcl_call, hcl_file, hcl_jsonencode, hcl_templatefile, hcl_yamlencode
+from phcl.syntax import B, abstract, hcl, hcl_call, hcl_file, hcl_jsonencode, hcl_templatefile, hcl_yamlencode
 from phcl.core import Node
 ```
 
@@ -24,7 +24,6 @@ In practice:
 
 - `B` as the short alias for `Block`
 - `abstract`
-- `generate`
 - `hcl(...)`
 - `hcl_call(...)`
 - `hcl_file(...)`

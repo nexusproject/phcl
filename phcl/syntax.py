@@ -11,7 +11,7 @@ from __future__ import annotations
 import warnings
 
 from .core import Block as B
-from .core.decorators import abstract, generate
+from .core.decorators import abstract
 from .core.expression import Expression, _HCLValue, hcl, hcl_call
 
 
@@ -57,7 +57,6 @@ def file(path: str | Expression) -> Expression:
 __all__ = [
     "B",
     "abstract",
-    "generate",
     "hcl",
     "hcl_call",
     "hcl_file",
