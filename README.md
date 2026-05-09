@@ -6,8 +6,7 @@
        align="right">
 </h1>
 
-PHCL is a Python DSL that compiles to native HCL2 and enables dynamic
-infrastructure generation workflows.
+PHCL is a Python-based Infrastructure as Code (IaC) tool for dynamic infrastructure workflows.
 
 It provides an authoring and generation layer for HCL-based tools such as
 Terraform, OpenTofu, and Packer.
