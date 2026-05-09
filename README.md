@@ -5,80 +5,113 @@
   <img src="https://codecov.io/gh/nexusproject/phcl/branch/main/graph/badge.svg"
        align="right">
 </h1>
-PHCL is a Python DSL that compiles to native HCL2 and enables dynamic infrastructure generation.
 
-## Idea
+PHCL is a Python DSL that compiles to native HCL2 and enables dynamic
+infrastructure generation workflows.
 
-In Terraform, HCL is great for describing infrastructure, but not for generating it dynamically. As complexity grows, configuration turns into a combinatorial explosion and becomes hard to maintain.
+It provides an authoring and generation layer for HCL-based tools such as
+Terraform, OpenTofu, and Packer.
 
-It also struggles when infrastructure depends on external data — YAML, JSON, databases, APIs — where data needs to be loaded, transformed, and combined before turning into resources.
+Declarations are written as Python classes. The source stays close to the shape
+of HCL while adding composition, dynamic generation, and integration with
+Python data and logic.
 
-PHCL moves generation, composition, and data processing into Python while keeping the output as clean, readable HCL2.
+## Example
 
-At the same time, PHCL keeps declaration code highly recognizable and as close as possible to native HCL2: you gain Python's expressive power without giving up the familiar shape of HCL-style authoring.
+```python
+class Logs(Resource["aws_s3_bucket"]):
+    bucket = "app-logs"
+    force_destroy = True
+    tags = {
+        "Name": "logs",
+        "ManagedBy": "PHCL",
+    }
 
-## Architecture
 
-PHCL is built around a small declarative core that treats Python classes as reusable HCL declaration shapes.
+class BucketId(Output):
+    value = Logs._.id
+```
 
-- `Classes as declarations` — class bodies describe HCL structures directly instead of building an intermediate runtime config format.
-- `Inheritance as refinement` — subclasses extend and override existing declaration shapes, making reuse and specialization native to the model.
-- `Registry and rendering` — concrete top-level declarations are collected and emitted as plain HCL2.
-- `Shared core, thin dialects` — Terraform-, Packer-, and other HCL2-oriented layers can stay thin on top of the same PHCL foundation.
-
-For example, instead of writing Terraform like this:
+renders as native HCL:
 
 ```hcl
-resource "aws_instance" "web" {
-  ami           = "ami-123"
-  instance_type = "t3.small"
+resource "aws_s3_bucket" "logs" {
+  bucket = "app-logs"
+  force_destroy = true
+  tags = {
+    Name = "logs"
+    ManagedBy = "PHCL"
+  }
+}
+
+output "bucket_id" {
+  value = aws_s3_bucket.logs.id
 }
 ```
 
-PHCL aims to let you express the same declaration shape like this:
+## Use Cases
+
+PHCL is useful when HCL is derived from project data rather than written
+directly: RBAC rules, users, roles, regions, environments, inventories, service
+definitions, or other source-of-truth records. When used alongside an existing
+Python project, PHCL can share data, constants, validation, and project logic,
+adapting generated configuration to the application it belongs to.
+
+For example, repeated declarations can be generated from normal Python data:
 
 ```python
-class Web(Resource["aws_instance"]):
-    ami = "ami-123"
-    instance_type = "t3.small"
+BUCKETS = {
+    "logs": {"bucket": "app-logs"},
+    "assets": {"bucket": "app-assets"},
+}
+
+
+@generate(BUCKETS)
+class Bucket(Resource["aws_s3_bucket"]):
+    bucket = this.value["bucket"]
+    tags = {"Name": this.key}
 ```
 
-See also: [Documentation](https://github.com/nexusproject/phcl/blob/main/docs/index.md)
+PHCL also fits incremental adoption in existing HCL projects: generate one
+file, one subtree, or one environment at a time, while the output remains plain
+HCL that can live next to hand-written configuration.
 
 ## CLI
 
-The CLI supports:
-
-- compile a single Python file into HCL output
-- walk a directory and compile each file independently
-- emit generated files next to sources, into another directory, or to stdout
-- read per-file output settings from a module-level `PHCL` config, defaulting output to `.hcl`
-
-This makes PHCL easy to adopt incrementally:
-
-- generate one file beside existing HCL
-- generate one subtree into a separate output directory
-- generate an entire repository in place
-- generate an entire repository into another target tree
-
-See also: [CLI docs](https://github.com/nexusproject/phcl/blob/main/docs/cli.md)
-
-## Installation
-
-The package exposes a `phcl` CLI entrypoint:
+Install PHCL:
 
 ```bash
 pip install phcl
 ```
 
-To install the Terraform dialect layer together with PHCL:
+Install PHCL with the Terraform dialect:
 
 ```bash
 pip install 'phcl[terraform]'
 ```
 
-Then:
+Build one file or a source tree:
 
 ```bash
-phcl build <target>
+ENV=dev phcl build src --out-dir envs/dev/
 ```
+
+Example output:
+
+```text
+==> build src
+  write src/backend.py -> envs/dev/backend.tf
+  write src/database.py -> envs/dev/database.tf
+  write src/network.py -> envs/dev/network.tf
+  write src/security.py -> envs/dev/security.tf
+
+==> done in 0.06s
+  13 written, 0 skipped, 0 failed
+```
+
+## Documentation
+
+- [Docs](https://github.com/nexusproject/phcl/blob/main/docs/index.md)
+- [CLI](https://github.com/nexusproject/phcl/blob/main/docs/cli.md)
+- [Runtime helpers](https://github.com/nexusproject/phcl/blob/main/docs/runtime.md)
+- [HCL identifiers and Python attribute syntax](https://github.com/nexusproject/phcl/blob/main/docs/hcl-python-identifiers.md)
