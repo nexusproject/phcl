@@ -10,6 +10,7 @@ from __future__ import annotations
 import inspect
 import json
 import os
+import re
 import warnings
 from collections.abc import Mapping
 from contextvars import ContextVar, Token
@@ -27,6 +28,8 @@ _BUILD_TARGET: ContextVar[Optional[Path]] = ContextVar(
     "phcl_build_target",
     default=None,
 )
+_GENERATION_KEY_RE = re.compile(r"^[A-Za-z][A-Za-z0-9_]*$")
+_MAX_ERROR_REPR = 80
 
 
 def _set_build_target(path: Path) -> Token[Optional[Path]]:
@@ -125,7 +128,13 @@ def _validate_block_attribute_name(name: Any) -> str:
     return name
 
 
-def derive(ancestor: type[Block], label: str, **attrs: Any) -> type[Block]:
+def _derive_class(
+    ancestor: type[Block],
+    label: str,
+    attrs: Mapping[str, Any],
+    *,
+    module_name: str,
+) -> type[Block]:
     if not isinstance(ancestor, type) or not issubclass(ancestor, Block):
         raise TypeError("derive(...) expects a Block ancestor class")
     if not isinstance(label, str):
@@ -133,15 +142,7 @@ def derive(ancestor: type[Block], label: str, **attrs: Any) -> type[Block]:
     if not label:
         raise ValueError("derive(...) label cannot be empty")
 
-    frame = inspect.currentframe()
-    caller = frame.f_back if frame is not None else None
-    caller_module = (
-        caller.f_globals.get("__name__", ancestor.__module__)
-        if caller is not None
-        else ancestor.__module__
-    )
-
-    namespace = {"__module__": caller_module}
+    namespace = {"__module__": module_name}
     for key, value in attrs.items():
         try:
             key = _validate_block_attribute_name(key)
@@ -150,6 +151,130 @@ def derive(ancestor: type[Block], label: str, **attrs: Any) -> type[Block]:
         namespace[key] = value
 
     return type(label, (ancestor,), namespace)
+
+
+def derive(ancestor: type[Block], label: str, **attrs: Any) -> type[Block]:
+    frame = inspect.currentframe()
+    caller = frame.f_back if frame is not None else None
+    caller_module = (
+        caller.f_globals.get("__name__", ancestor.__module__)
+        if caller is not None
+        else ancestor.__module__
+    )
+
+    return _derive_class(ancestor, label, attrs, module_name=caller_module)
+
+
+class _GenerationItem:
+    def __init__(self, *, index: int, key: str, value: Any):
+        self.index = index
+        self.key = key
+        self.value = value
+
+
+class _ThisExpr:
+    def __init__(self, root: str, path: tuple[tuple[str, Any], ...] = ()):
+        self._root = root
+        self._path = path
+
+    def __getattr__(self, name: str):
+        if name.startswith("_"):
+            raise AttributeError(name)
+        return _ThisExpr(self._root, self._path + (("attr", name),))
+
+    def __getitem__(self, key: Any):
+        return _ThisExpr(self._root, self._path + (("item", key),))
+
+    def _phcl_resolve(self, item: _GenerationItem):
+        value = getattr(item, self._root)
+        for op, arg in self._path:
+            if op == "attr":
+                value = getattr(value, arg)
+            else:
+                value = value[arg]
+        return value
+
+
+class _This:
+    @property
+    def index(self) -> _ThisExpr:
+        return _ThisExpr("index")
+
+    @property
+    def key(self) -> _ThisExpr:
+        return _ThisExpr("key")
+
+    @property
+    def value(self) -> _ThisExpr:
+        return _ThisExpr("value")
+
+
+this = _This()
+
+
+def _validate_generation_key(key: Any) -> str:
+    if not isinstance(key, str):
+        raise TypeError("generate(...) keys must be strings")
+
+    key_repr = repr(key)
+    if len(key_repr) > _MAX_ERROR_REPR:
+        key_repr = f"{key_repr[:_MAX_ERROR_REPR - 3]}..."
+
+    if not _GENERATION_KEY_RE.match(key):
+        raise ValueError(
+            f"generate(...) key {key_repr} must match [A-Za-z][A-Za-z0-9_]*"
+        )
+    return key
+
+
+def _resolve_this(value: Any, item: _GenerationItem) -> Any:
+    if isinstance(value, _ThisExpr):
+        return value._phcl_resolve(item)
+    if isinstance(value, list):
+        return [_resolve_this(item_value, item) for item_value in value]
+    if isinstance(value, tuple):
+        return tuple(_resolve_this(item_value, item) for item_value in value)
+    if isinstance(value, Mapping):
+        return {
+            key: _resolve_this(item_value, item)
+            for key, item_value in value.items()
+        }
+    return value
+
+
+def generate(data: Mapping[str, Any]):
+    if not isinstance(data, Mapping):
+        raise TypeError("generate(...) expects a mapping")
+
+    items = [
+        _GenerationItem(index=index, key=_validate_generation_key(key), value=value)
+        for index, (key, value) in enumerate(data.items())
+    ]
+
+    def decorator(cls: type[Block]) -> type[Block]:
+        if not isinstance(cls, type) or not issubclass(cls, Block):
+            raise TypeError("generate(...) can only decorate Block classes")
+
+        cls._phcl_abstract = True
+        for item in items:
+            attrs = {}
+            for name, value in cls.__dict__.items():
+                if name == "_" or name.startswith("_phcl_") or (
+                    name.startswith("__") and name.endswith("__")
+                ):
+                    continue
+                attrs[name] = _resolve_this(value, item)
+
+            _derive_class(
+                cls,
+                f"{cls.__name__}_{item.key}",
+                attrs,
+                module_name=cls.__module__,
+            )
+
+        return cls
+
+    return decorator
 
 
 def dict_block(data: Mapping[str, Any]) -> type[Block]:
@@ -314,6 +439,8 @@ __all__ = [
     "heredoc",
     "multiline",
     "derive",
+    "generate",
+    "this",
     "dict_block",
     "json_block",
     "yaml_block",

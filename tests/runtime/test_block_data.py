@@ -6,7 +6,7 @@ from phcl.core.expression import hcl
 from phcl.core.nodes import Node
 from phcl.core.registry import Registry
 from phcl.render.hcl2 import render_block
-from phcl.runtime import block_dict, derive, dict_block, json_block, yaml_block
+from phcl.runtime import block_dict, derive, dict_block, generate, json_block, this, yaml_block
 
 
 @pytest.fixture(autouse=True)
@@ -169,6 +169,93 @@ def test_derive_rejects_empty_label():
 def test_derive_validates_attribute_names():
     with pytest.raises(ValueError, match=r"derive\(\.\.\.\) invalid attribute"):
         derive(Block, "public", **{"AWS:SourceArn": "api"})
+
+
+def test_generate_materializes_declarations_from_mapping_with_key_suffix():
+    @abstract
+    class Resource(Node["aws_s3_bucket"]):
+        _phcl_kind = "resource"
+
+    @generate({
+        "dev": {"bucket": "app-dev"},
+        "prod": {"bucket": "app-prod"},
+    })
+    class Bucket(Resource):
+        bucket = this.value["bucket"]
+        tags = {
+            "Env": this.key,
+            "Index": this.index,
+        }
+
+    BucketDev, BucketProd = Registry.renderables()
+
+    assert Bucket.__dict__["_phcl_abstract"] is True
+    assert BucketDev.__name__ == "Bucket_dev"
+    assert BucketProd.__name__ == "Bucket_prod"
+    assert render_block(BucketDev()) == (
+        'resource "aws_s3_bucket" "bucket_dev" {\n'
+        '  bucket = "app-dev"\n'
+        '  tags = {\n'
+        '    Env = "dev"\n'
+        '    Index = 0\n'
+        '  }\n'
+        "}"
+    )
+    assert render_block(BucketProd()) == (
+        'resource "aws_s3_bucket" "bucket_prod" {\n'
+        '  bucket = "app-prod"\n'
+        '  tags = {\n'
+        '    Env = "prod"\n'
+        '    Index = 1\n'
+        '  }\n'
+        "}"
+    )
+
+
+def test_generate_preserves_original_value_objects():
+    class Config:
+        name = "api"
+
+    @abstract
+    class Resource(Node["example"]):
+        _phcl_kind = "resource"
+
+    @generate({"dev": Config()})
+    class Service(Resource):
+        name = this.value.name
+
+    [ServiceDev] = Registry.renderables()
+
+    assert ServiceDev()._phcl_attributes["name"] == "api"
+
+
+def test_generate_rejects_non_mapping_values():
+    with pytest.raises(TypeError, match="mapping"):
+        generate(["dev"])
+
+
+def test_generate_rejects_non_string_keys():
+    with pytest.raises(TypeError, match="keys must be strings"):
+        generate({("dev", "blue"): {}})
+
+
+def test_generate_omits_non_string_key_reprs_in_errors():
+    key = tuple(f"part_{index}" for index in range(50))
+
+    with pytest.raises(TypeError) as excinfo:
+        generate({key: {}})
+
+    assert str(excinfo.value) == "generate(...) keys must be strings"
+
+
+def test_generate_rejects_label_unsafe_keys():
+    with pytest.raises(ValueError, match=r"must match \[A-Za-z\]"):
+        generate({"dev-blue": {}})
+
+
+def test_generate_rejects_non_block_classes():
+    with pytest.raises(TypeError, match="Block classes"):
+        generate({"dev": {}})(object)
 
 
 def test_json_block_builds_block_base_from_file_mapping(tmp_path):
