@@ -111,8 +111,9 @@ emitted as an HCL heredoc instead of a quoted string.
 `generate(...)` materializes multiple concrete declarations from one
 class-first declaration template.
 
-The first version accepts a mapping. Mapping keys become stable generation
-identity suffixes, and values remain the original Python values.
+`generate(...)` accepts a mapping or a list. Mapping keys become generation
+identity suffixes. List items use positional string keys such as `"0"` and
+`"1"`. Values remain the original Python values.
 
 Example:
 
@@ -137,19 +138,52 @@ This materializes declarations with labels such as `bucket_dev` and
 `bucket_prod`: the normal class-derived trailing label is preserved, and the
 generation key is appended with `_`.
 
+The decorated class becomes a generation template and is not rendered directly.
+Concrete declaration classes are materialized as soon as Python applies the
+decorator, so the renderer still receives ordinary declaration classes.
+
+Use `Template._["key"]` to reference a generated declaration by generation key:
+
+```python
+class BucketArn(Output):
+    value = Bucket._["dev"].arn
+```
+
+This renders as a reference to the materialized declaration label, such as
+`aws_s3_bucket.bucket_dev.arn`. Bare traversal from the template, such as
+`Bucket._.arn`, is rejected because the template itself is not rendered.
+
+If a generated declaration also uses Terraform `for_each`, select the generated
+declaration first and then use normal HCL index traversal:
+
+```python
+Bucket._["dev"]["primary"].id
+```
+
 Inside the generated class body:
 
-- `this.key` is the mapping key as a string.
-- `this.index` is the integer position in mapping order.
-- `this.value` is the original mapping value.
+- `this.key` is the mapping key or list position as a string.
+- `this.index` is the integer position in input order.
+- `this.value` is the original input value.
 
 `this` is only valid inside a class decorated with `@generate(...)`. Using it
 in a normal declaration is an error because there is no current generation
 item to resolve.
 
-Generation keys must be non-empty strings matching `[A-Za-z][A-Za-z0-9_]*`.
-Use a mapping when declaration identity matters; unordered collections such as
-sets are not accepted.
+Apply `@generate(...)` only once per declaration class. Use `derive(...)` when
+custom generation code needs to build declarations across multiple dimensions
+or naming rules.
+
+Mapping keys must be non-empty strings matching `[A-Za-z][A-Za-z0-9_]*`.
+Use a mapping when declaration identity matters. Lists are positional, so
+inserting or reordering items can rename materialized declarations.
+
+Use list input carefully. The list should already have a stable, intentional
+order. Avoid feeding `generate(...)` a list produced from unordered data such
+as `list(set(...))`, because positional keys can shift between runs and rename
+stateful declarations.
+
+Unordered collections such as sets are not accepted.
 
 ## `derive(...)`
 
