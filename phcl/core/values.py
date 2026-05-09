@@ -40,6 +40,10 @@ def _normalize_value(
     if passthrough_types and isinstance(value, passthrough_types):
         return value
 
+    normalize = getattr(value, "_phcl_normalize", None)
+    if normalize is not None:
+        return normalize()
+
     if isinstance(value, Mapping):
         marker = id(value)
         if marker in seen:

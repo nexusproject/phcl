@@ -495,6 +495,39 @@ def test_compile_file_returns_fail_on_execution_error(tmp_path):
     assert "boom" in result.detail
 
 
+def test_compile_file_returns_fail_on_render_error(tmp_path):
+    source = write_file(
+        tmp_path / "broken_render.py",
+        """
+class PHCL:
+    extension = "tf"
+
+from phcl.runtime import this
+from phcl.core.nodes import Node
+
+class Resource(Node["example"]):
+    _phcl_kind = "resource"
+
+class Broken(Resource):
+    name = this.key
+""".strip()
+        + "\n",
+    )
+
+    result = compile_file(
+        source,
+        base=tmp_path,
+        out_dir=None,
+        ext=None,
+        stdout=False,
+    )
+
+    assert result.status == "fail"
+    assert result.output is None
+    assert result.detail == "`this` is only available inside `generate(...)`"
+    assert Registry.renderables() == []
+
+
 def test_command_build_rejects_stdout_for_directory(tmp_path, capsys):
     args = Namespace(
         target=str(tmp_path),

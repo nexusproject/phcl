@@ -258,6 +258,14 @@ def test_generate_rejects_non_block_classes():
         generate({"dev": {}})(object)
 
 
+def test_this_outside_generate_raises_clear_error():
+    class Service(Block):
+        name = this.key
+
+    with pytest.raises(RuntimeError, match=r"`this` is only available inside `generate"):
+        Service()._phcl_normalize_attr("name", Service.name)
+
+
 def test_json_block_builds_block_base_from_file_mapping(tmp_path):
     path = tmp_path / "config.json"
     path.write_text('{"name": "api", "replicas": 2}', encoding="utf-8")

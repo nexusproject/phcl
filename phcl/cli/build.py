@@ -139,31 +139,41 @@ def compile_file(source: Path, *, base: Path, out_dir: Optional[Path], ext: Opti
                     warnings=collect_build_warnings(warning_records),
                 )
 
-            output_ext = normalize_extension(ext) if ext else (file_config.extension or DEFAULT_OUTPUT_EXTENSION)
+            try:
+                output_ext = normalize_extension(ext) if ext else (file_config.extension or DEFAULT_OUTPUT_EXTENSION)
 
-            rendered = build_hcl(registry, indent=file_config.indentation)
-            Registry.reset()
+                rendered = build_hcl(registry, indent=file_config.indentation)
+                Registry.reset()
 
-            if stdout:
-                import sys
+                if stdout:
+                    import sys
 
-                sys.stdout.write(rendered)
+                    sys.stdout.write(rendered)
+                    return BuildResult(
+                        source=source,
+                        output=None,
+                        status="stdout",
+                        warnings=collect_build_warnings(warning_records),
+                    )
+
+                destination = output_path_for(source, base, out_dir, output_ext)
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                destination.write_text(rendered, encoding="utf-8")
+                return BuildResult(
+                    source=source,
+                    output=destination,
+                    status="write",
+                    warnings=collect_build_warnings(warning_records),
+                )
+            except Exception as exc:
+                Registry.reset()
                 return BuildResult(
                     source=source,
                     output=None,
-                    status="stdout",
+                    status="fail",
+                    detail=str(exc),
                     warnings=collect_build_warnings(warning_records),
                 )
-
-            destination = output_path_for(source, base, out_dir, output_ext)
-            destination.parent.mkdir(parents=True, exist_ok=True)
-            destination.write_text(rendered, encoding="utf-8")
-            return BuildResult(
-                source=source,
-                output=destination,
-                status="write",
-                warnings=collect_build_warnings(warning_records),
-            )
     finally:
         _reset_build_target(target_token)
 

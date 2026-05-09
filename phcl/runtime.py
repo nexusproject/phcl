@@ -194,6 +194,9 @@ class _ThisExpr:
                 value = value[arg]
         return value
 
+    def _phcl_normalize(self):
+        raise RuntimeError("`this` is only available inside `generate(...)`")
+
 
 class _This:
     @property
