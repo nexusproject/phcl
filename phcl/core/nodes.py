@@ -18,6 +18,29 @@ class _ClassProperty:
         return self.fget(owner)
 
 
+class _GeneratedTemplateReference:
+    def __init__(self, cls):
+        self.cls = cls
+
+    def __getitem__(self, key: str):
+        classes = self.cls.__dict__.get("_phcl_generation_classes", {})
+        try:
+            generated_cls = classes[key]
+        except KeyError as exc:
+            raise KeyError(
+                f"{self.cls.__name__} has no generated declaration for key {key!r}"
+            ) from exc
+        return Reference(generated_cls._phcl_reference_base())
+
+    def __getattr__(self, name: str):
+        if name.startswith("_"):
+            raise AttributeError(name)
+        raise TypeError(
+            f"{self.cls.__name__} is a generated template; select a generated "
+            f"declaration with {self.cls.__name__}._[\"key\"]"
+        )
+
+
 def class_to_label(name: str) -> str:
     """
     Convert Python class name (PascalCase with acronyms)
@@ -150,6 +173,8 @@ class Node(Block):
 
     @_ClassProperty
     def _(cls):
+        if cls.__dict__.get("_phcl_generated_template", False):
+            return _GeneratedTemplateReference(cls)
         return Reference(cls._phcl_reference_base())
 
     def __init_subclass__(cls, **kwargs):

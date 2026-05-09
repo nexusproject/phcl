@@ -267,8 +267,15 @@ def generate(data: Mapping[str, Any] | list[Any]):
     def decorator(cls: type[Block]) -> type[Block]:
         if not isinstance(cls, type) or not issubclass(cls, Block):
             raise TypeError("generate(...) can only decorate Block classes")
+        if cls.__dict__.get("_phcl_generated_template", False):
+            raise TypeError(
+                "generate(...) cannot be stacked; use derive(...) for custom "
+                "generation flows"
+            )
 
         cls._phcl_abstract = True
+        cls._phcl_generated_template = True
+        cls._phcl_generation_classes = {}
         for item in items:
             attrs = {}
             for name, value in cls.__dict__.items():
@@ -278,12 +285,13 @@ def generate(data: Mapping[str, Any] | list[Any]):
                     continue
                 attrs[name] = _resolve_this(value, item)
 
-            _derive_class(
+            generated_cls = _derive_class(
                 cls,
                 f"{cls.__name__}_{item.key}",
                 attrs,
                 module_name=cls.__module__,
             )
+            cls._phcl_generation_classes[item.key] = generated_cls
 
         return cls
 

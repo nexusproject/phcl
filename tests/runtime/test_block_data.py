@@ -291,6 +291,89 @@ def test_generate_rejects_non_block_classes():
         generate({"dev": {}})(object)
 
 
+def test_generate_rejects_stacked_decorators():
+    @abstract
+    class Resource(Node["example"]):
+        _phcl_kind = "resource"
+
+    with pytest.raises(TypeError, match="cannot be stacked"):
+        generate({"dev": {}})(
+            generate({"blue": {}})(
+                type(
+                    "Service",
+                    (Resource,),
+                    {
+                        "__module__": __name__,
+                        "name": this.key,
+                    },
+                )
+            )
+        )
+
+
+def test_generated_template_references_select_generated_classes_by_key():
+    @abstract
+    class Resource(Node["aws_s3_bucket"]):
+        _phcl_kind = "resource"
+
+        @classmethod
+        def _phcl_reference_base(cls):
+            return f"{cls._phcl_label[0]}.{cls._phcl_logical_name()}"
+
+    @generate({"logs": {"bucket": "app-logs"}})
+    class Bucket(Resource):
+        bucket = this.value["bucket"]
+
+    [BucketLogs] = Registry.renderables()
+
+    assert str(Bucket._["logs"].arn) == "aws_s3_bucket.bucket_logs.arn"
+    assert str(BucketLogs._.arn) == "aws_s3_bucket.bucket_logs.arn"
+
+
+def test_generated_template_references_can_be_indexed_after_key_selection():
+    @abstract
+    class Resource(Node["aws_s3_bucket"]):
+        _phcl_kind = "resource"
+
+        @classmethod
+        def _phcl_reference_base(cls):
+            return f"{cls._phcl_label[0]}.{cls._phcl_logical_name()}"
+
+    @generate({"logs": {}})
+    class Bucket(Resource):
+        for_each = ["primary"]
+
+    assert str(Bucket._["logs"]["primary"].id) == (
+        'aws_s3_bucket.bucket_logs["primary"].id'
+    )
+
+
+def test_generated_template_rejects_bare_reference_traversal():
+    @abstract
+    class Resource(Node["aws_s3_bucket"]):
+        _phcl_kind = "resource"
+
+    @generate({"logs": {}})
+    class Bucket(Resource):
+        pass
+
+    with pytest.raises(TypeError, match=r'Bucket\._\["key"\]'):
+        Bucket._.arn
+
+
+def test_generated_template_rejects_missing_reference_keys():
+    @abstract
+    class Resource(Node["aws_s3_bucket"]):
+        _phcl_kind = "resource"
+
+    @generate({"logs": {}})
+    class Bucket(Resource):
+        pass
+
+    with pytest.raises(KeyError, match="missing"):
+        Bucket._["missing"]
+
+
 def test_this_outside_generate_raises_clear_error():
     class Service(Block):
         name = this.key
