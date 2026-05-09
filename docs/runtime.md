@@ -142,18 +142,17 @@ The decorated class becomes a generation template and is not rendered directly.
 Concrete declaration classes are materialized as soon as Python applies the
 decorator, so the renderer still receives ordinary declaration classes.
 
-Use `Template._["key"]` to reference a generated declaration by generation key:
-
 ```python
 class BucketArn(Output):
     value = Bucket._["dev"].arn
 ```
 
-This renders as a reference to the materialized declaration label, such as
-`aws_s3_bucket.bucket_dev.arn`. Bare traversal from the template, such as
-`Bucket._.arn`, is rejected because the template itself is not rendered.
+Bare traversal from the template, such as `Bucket._.arn`, is rejected because
+the template itself is not rendered.
+Although generated templates are selected with `._["key"]`, `._` is not a
+reference collection in this case.
 
-If a generated declaration also uses Terraform `for_each`, select the generated
+For Terraform resources that also have `for_each`, select the generated
 declaration first and then use normal HCL index traversal:
 
 ```python
@@ -165,6 +164,14 @@ Inside the generated class body:
 - `this.key` is the mapping key or list position as a string.
 - `this.index` is the integer position in input order.
 - `this.value` is the original input value.
+- `this.label` is the generated unique declaration identity, or `None` for
+  declaration kinds that do not have one.
+
+`this.*` values act as generation-time selectors while the class body is being
+defined. Use them directly as attribute values, or inside lists and mappings.
+Do not apply Python operations to them in the declaration body. If a generated
+declaration needs transformed values, prepare those values in the data passed
+to `generate(...)`.
 
 `this` is only valid inside a class decorated with `@generate(...)`. Using it
 in a normal declaration is an error because there is no current generation
