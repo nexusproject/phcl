@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.5.1
+
+- Added `generate(...)` and `this` for mapping-driven declaration materialization with stable label suffixes
+- Added list input support for `generate(...)` with positional generation keys
+- Added generated template references via `Template._["key"]`
+- Added `this.label` for accessing the final generated declaration label inside `generate(...)`
+
 ## v0.5.0
 
 - Added `derive(...)` for materializing concrete declarations from ancestor classes with explicit trailing labels and resource attributes
