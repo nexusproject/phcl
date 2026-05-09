@@ -19,6 +19,7 @@ from string import Template
 from typing import Any, Optional, Union
 
 from .core import Block
+from .core.nodes import class_to_label
 from .core.expression import Expression, hcl
 
 
@@ -166,10 +167,11 @@ def derive(ancestor: type[Block], label: str, **attrs: Any) -> type[Block]:
 
 
 class _GenerationItem:
-    def __init__(self, *, index: int, key: str, value: Any):
+    def __init__(self, *, index: int, key: str, value: Any, label: str | None = None):
         self.index = index
         self.key = key
         self.value = value
+        self.label = label
 
 
 class _ThisExpr:
@@ -210,6 +212,10 @@ class _This:
     @property
     def value(self) -> _ThisExpr:
         return _ThisExpr("value")
+
+    @property
+    def label(self) -> _ThisExpr:
+        return _ThisExpr("label")
 
 
 this = _This()
@@ -277,6 +283,12 @@ def generate(data: Mapping[str, Any] | list[Any]):
         cls._phcl_generated_template = True
         cls._phcl_generation_classes = {}
         for item in items:
+            generated_name = f"{cls.__name__}_{item.key}"
+            item.label = (
+                class_to_label(generated_name)
+                if getattr(cls, "_phcl_auto_label", True)
+                else None
+            )
             attrs = {}
             for name, value in cls.__dict__.items():
                 if name == "_" or name.startswith("_phcl_") or (
@@ -287,7 +299,7 @@ def generate(data: Mapping[str, Any] | list[Any]):
 
             generated_cls = _derive_class(
                 cls,
-                f"{cls.__name__}_{item.key}",
+                generated_name,
                 attrs,
                 module_name=cls.__module__,
             )

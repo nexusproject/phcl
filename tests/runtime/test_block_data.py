@@ -185,6 +185,7 @@ def test_generate_materializes_declarations_from_mapping_with_key_suffix():
         tags = {
             "Env": this.key,
             "Index": this.index,
+            "Label": this.label,
         }
 
     BucketDev, BucketProd = Registry.renderables()
@@ -198,6 +199,7 @@ def test_generate_materializes_declarations_from_mapping_with_key_suffix():
         '  tags = {\n'
         '    Env = "dev"\n'
         '    Index = 0\n'
+        '    Label = "bucket_dev"\n'
         '  }\n'
         "}"
     )
@@ -207,6 +209,7 @@ def test_generate_materializes_declarations_from_mapping_with_key_suffix():
         '  tags = {\n'
         '    Env = "prod"\n'
         '    Index = 1\n'
+        '    Label = "bucket_prod"\n'
         '  }\n'
         "}"
     )
@@ -242,6 +245,7 @@ def test_generate_materializes_declarations_from_list_with_positional_keys():
         name = this.value["name"]
         generation_key = this.key
         generation_index = this.index
+        generation_label = this.label
 
     Service0, Service1 = Registry.renderables()
 
@@ -251,12 +255,39 @@ def test_generate_materializes_declarations_from_list_with_positional_keys():
         "name": "api",
         "generation_key": "0",
         "generation_index": 0,
+        "generation_label": "service_0",
     }
     assert Service1()._phcl_attributes == {
         "name": "worker",
         "generation_key": "1",
         "generation_index": 1,
+        "generation_label": "service_1",
     }
+
+
+def test_generate_sets_label_to_none_without_auto_label():
+    @abstract
+    class Locals(Node):
+        _phcl_kind = "locals"
+        _phcl_auto_label = False
+
+    @generate({"dev": {"name": "api"}})
+    class Config(Locals):
+        label = this.label
+        name = this.value["name"]
+
+    [ConfigDev] = Registry.renderables()
+
+    assert ConfigDev()._phcl_attributes == {
+        "label": None,
+        "name": "api",
+    }
+    assert render_block(ConfigDev()) == (
+        "locals {\n"
+        "  label = null\n"
+        '  name = "api"\n'
+        "}"
+    )
 
 
 def test_generate_rejects_unsupported_iterables():
