@@ -1,8 +1,19 @@
 import pytest
 
 from phcl.core import Block
+from phcl.core.decorators import abstract
 from phcl.core.expression import hcl
-from phcl.runtime import block_dict, dict_block, json_block, yaml_block
+from phcl.core.nodes import Node
+from phcl.core.registry import Registry
+from phcl.render.hcl2 import render_block
+from phcl.runtime import block_dict, derive, dict_block, json_block, yaml_block
+
+
+@pytest.fixture(autouse=True)
+def reset_registry():
+    Registry.reset()
+    yield
+    Registry.reset()
 
 
 def test_dict_block_builds_block_base_from_mapping():
@@ -114,6 +125,50 @@ def test_dict_block_rejects_single_underscore_key():
 def test_block_dict_rejects_non_block_values():
     with pytest.raises(TypeError, match="Block"):
         block_dict({"name": "api"})
+
+
+def test_derive_materializes_declaration_from_ancestor_and_explicit_label():
+    @abstract
+    class Resource(Node["aws_api_gateway_rest_api"]):
+        _phcl_kind = "resource"
+
+    @abstract
+    class RegionalApi(Resource):
+        endpoint_configuration = {"types": ["REGIONAL"]}
+
+    Api = derive(RegionalApi, "public", description="Public API")
+
+    assert Api.__name__ == "public"
+    assert render_block(Api()) == (
+        'resource "aws_api_gateway_rest_api" "public" {\n'
+        '  endpoint_configuration = {\n'
+        '    types = ["REGIONAL"]\n'
+        '  }\n'
+        '  description = "Public API"\n'
+        "}"
+    )
+    assert Registry.renderables() == [Api]
+
+
+def test_derive_uses_calling_module_for_generated_class():
+    Derived = derive(Block, "derived")
+
+    assert Derived.__module__ == __name__
+
+
+def test_derive_rejects_non_block_ancestor():
+    with pytest.raises(TypeError, match="Block ancestor"):
+        derive(object, "public")
+
+
+def test_derive_rejects_empty_label():
+    with pytest.raises(ValueError, match="cannot be empty"):
+        derive(Block, "")
+
+
+def test_derive_validates_attribute_names():
+    with pytest.raises(ValueError, match=r"derive\(\.\.\.\) invalid attribute"):
+        derive(Block, "public", **{"AWS:SourceArn": "api"})
 
 
 def test_json_block_builds_block_base_from_file_mapping(tmp_path):

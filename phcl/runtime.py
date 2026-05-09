@@ -125,6 +125,33 @@ def _validate_block_attribute_name(name: Any) -> str:
     return name
 
 
+def derive(ancestor: type[Block], label: str, **attrs: Any) -> type[Block]:
+    if not isinstance(ancestor, type) or not issubclass(ancestor, Block):
+        raise TypeError("derive(...) expects a Block ancestor class")
+    if not isinstance(label, str):
+        raise TypeError("derive(...) label must be a string")
+    if not label:
+        raise ValueError("derive(...) label cannot be empty")
+
+    frame = inspect.currentframe()
+    caller = frame.f_back if frame is not None else None
+    caller_module = (
+        caller.f_globals.get("__name__", ancestor.__module__)
+        if caller is not None
+        else ancestor.__module__
+    )
+
+    namespace = {"__module__": caller_module}
+    for key, value in attrs.items():
+        try:
+            key = _validate_block_attribute_name(key)
+        except (TypeError, ValueError) as exc:
+            raise type(exc)(f"derive(...) invalid attribute: {exc}") from exc
+        namespace[key] = value
+
+    return type(label, (ancestor,), namespace)
+
+
 def dict_block(data: Mapping[str, Any]) -> type[Block]:
     if not isinstance(data, Mapping):
         raise TypeError("dict_block(...) expects a mapping")
@@ -286,6 +313,7 @@ __all__ = [
     "path_target",
     "heredoc",
     "multiline",
+    "derive",
     "dict_block",
     "json_block",
     "yaml_block",
