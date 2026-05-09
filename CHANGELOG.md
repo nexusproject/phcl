@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.5.0
+
+- Added `derive(...)` for materializing concrete declarations from ancestor classes with explicit trailing labels and resource attributes
+
 ## v0.4.4
 
 - Allowed `dict_block(...)` and file-backed block helpers to use valid HCL identifiers such as Python keywords and names containing `-`
