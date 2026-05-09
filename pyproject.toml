@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "phcl"
-version = "0.4.4"
-description = "Python-powered structural DSL for authoring native HCL2."
+version = "0.5.0"
+description = "Python-powered structural DSL for authoring native HCL2 configuration."
 authors = [
     {name = "Dmitry Sergeev",email = "realnexusway@gmail.com"}
 ]
