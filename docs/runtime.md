@@ -11,6 +11,7 @@ Typical imports:
 ```python
 from phcl.runtime import (
     block_dict,
+    derive,
     dict_block,
     heredoc,
     json_block,
@@ -28,6 +29,7 @@ from phcl.runtime import (
 - `path_module()`
 - `path_target()`
 - `heredoc(...)`
+- `derive(...)`
 - `dict_block(...)`
 - `json_block(...)`
 - `yaml_block(...)`
@@ -99,6 +101,37 @@ script = heredoc("echo hello\necho world")
 
 This is useful when content already exists on the Python side but should be
 emitted as an HCL heredoc instead of a quoted string.
+
+## `derive(...)`
+
+`derive(...)` materializes a concrete declaration class from an ancestor class,
+an explicit trailing label, and ordinary HCL body attributes.
+
+Use it when a declaration should be produced functionally while still following
+PHCL's class-first model.
+
+Example:
+
+```python
+from phcl.core.decorators import abstract
+from phcl.runtime import derive
+from phcl.terraform import Resource
+
+
+@abstract
+class RegionalApi(Resource["aws_api_gateway_rest_api"]):
+    endpoint_configuration = {"types": ["REGIONAL"]}
+
+
+PublicApi = derive(
+    RegionalApi,
+    "public",
+    description="Public API",
+)
+```
+
+This is equivalent in shape to declaring a concrete subclass with the explicit
+label `public`; keyword arguments become normal declaration attributes.
 
 ## `dict_block(...)`
 
