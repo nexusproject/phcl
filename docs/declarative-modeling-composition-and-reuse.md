@@ -111,13 +111,23 @@ class WebSecurityGroup(Resource["aws_security_group"]):
 The reusable fragments remain ordinary HCL-shaped bodies. The surrounding
 resource decides where they are used.
 
-## Multiple Block Bases
+## Multiple Body Bases
 
-`Block` fragments can also use normal Python multiple inheritance when
-independent fragment bodies should be combined.
+Top-level declarations can inherit from one declaration family and additional
+independent `Block` fragments that contribute body attributes.
 
 ```python
 from phcl.core import Block
+from phcl.terraform import Resource
+
+
+class WebIdentity(Block):
+    name = "web"
+    description = "Web access"
+
+
+class VpcBinding(Block):
+    vpc_id = "vpc-0123456789abcdef0"
 
 
 class Tcp(Block):
@@ -132,11 +142,16 @@ class HttpIngress(Tcp, PublicCidr):
     description = "HTTP"
     from_port = 80
     to_port = 80
+
+
+class WebSecurityGroup(Resource["aws_security_group"], WebIdentity, VpcBinding):
+    ingress = HttpIngress
 ```
 
-Multiple inheritance is intended for block fragments. Top-level declarations
-use a single declaration family and compose their body through attributes,
-nested blocks, object fragments, or ordinary refinement.
+`HttpIngress` is a reusable nested block assembled from smaller block fragments.
+`WebSecurityGroup` is a top-level declaration assembled the same way: it has one
+declaration family, `Resource["aws_security_group"]`, plus reusable body
+fragments. Avoid mixing multiple top-level declaration families in one class.
 
 ## Local Variations
 
