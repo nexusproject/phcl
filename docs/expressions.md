@@ -1,70 +1,126 @@
 # Expressions and References
 
-PHCL separates two different concepts:
+PHCL is a structural DSL for authoring HCL bodies and declarations. It does not
+try to reimplement the full HCL expression language as Python operators.
 
-- raw HCL expressions
-- structured references
-- structural Python values lowered into HCL value space
+Instead, PHCL keeps a clear boundary:
 
-`Reference` is also an expression, but a more specific one: it represents traversal syntax built structurally rather than written as raw HCL text.
+- Python literals and containers are lowered into HCL value syntax.
+- `hcl(...)` keeps native HCL expressions as native HCL.
+- `Reference` builds HCL traversal paths structurally.
+- `hcl_call(...)` and wrapped `hcl_*` helpers build native HCL function calls
+  from PHCL/Python values.
 
-## Expression
+This keeps declarations close to the shape of HCL while still allowing Python
+to assemble structure around them.
 
-`Expression` is an opaque raw HCL fragment.
+## Structural Values
 
-Use it when the value should be emitted exactly as HCL syntax.
+Normal Python values can be used directly in PHCL attributes.
+
+This includes:
+
+- `None`, `bool`, `int`, `float`, and `str`
+- `dict`
+- `list` and `tuple`
+- generic iterable values such as generators
+
+Example:
+
+```python
+tags = {
+    "Name": "api",
+    "ManagedBy": "PHCL",
+}
+
+ports = (port for port in (8080, 8443))
+```
+
+Embedded `Expression` and `Reference` values are preserved while surrounding
+Python containers are lowered into HCL value syntax.
+
+PHCL rejects cyclic Python container structures during normalization.
+
+## Raw HCL Expressions
+
+Use `hcl(...)` when a value should be emitted as native HCL syntax instead of a
+quoted string or lowered Python value.
 
 ```python
 from phcl.syntax import hcl
 
 
-value = hcl('var.enabled ? "api" : "worker"')
+name = hcl('var.enabled ? "api" : "worker"')
+matching_names = hcl('[for name in var.names : name if startswith(name, "api-")]')
 ```
 
-This renders as:
+The first value renders as:
 
 ```hcl
-value = var.enabled ? "api" : "worker"
+name = var.enabled ? "api" : "worker"
 ```
 
 not:
 
 ```hcl
-value = "var.enabled ? \"api\" : \"worker\""
+name = "var.enabled ? \"api\" : \"worker\""
 ```
 
-User-facing helpers such as `hcl(...)`, `hcl_call(...)`,
-`hcl_jsonencode(...)`, `hcl_yamlencode(...)`, `hcl_file(...)`, and
-`hcl_templatefile(...)` are documented in
-[`phcl.syntax`](./syntax.md). This page focuses on the common expression model
-underneath them.
+Use `hcl(...)` for HCL syntax that should remain fully target-side: conditionals,
+`for` expressions, provider-specific expressions, or constructs PHCL does not
+model structurally.
 
-## Structural Value Casting
+## HCL Function Calls
 
-PHCL can lower normal Python structures into HCL value space automatically inside attribute values.
-
-This includes:
-
-- `dict`
-- `list`
-- `tuple`
-- generic `Iterable` values such as generators
-
-Embedded `Expression` and `Reference` values are preserved during that lowering step.
-
-Example:
+For common HCL functions, prefer wrapped helpers from `phcl.syntax` when one is
+available:
 
 ```python
-config = {
-    "name": "api",
-    "image": "registry.example.com/api:latest",
-    "ports": (port for port in (8080, 8443)),
-}
+from phcl.syntax import hcl_format, hcl_jsonencode, hcl_templatefile
+from phcl.terraform import var
+
+
+container_definitions = hcl_jsonencode(
+    [
+        {
+            "name": "api",
+            "image": var.app_image,
+            "portMappings": [{"containerPort": 8080}],
+        }
+    ]
+)
+
+asset_path = hcl_format("%s/*", var.asset_prefix)
+
+user_data = hcl_templatefile(
+    "${path.module}/templates/user_data.sh.tftpl",
+    {
+        "app_name": var.app_name,
+        "port": 8080,
+    },
+)
 ```
 
-PHCL also rejects cyclic Python container structures during normalization.
+These helpers keep arguments structural and still emit native HCL function
+calls in the generated output.
 
-## Reference
+Use `hcl_call(...)` when the HCL function name is selected in Python code, or
+when PHCL does not provide a dedicated wrapper yet.
+
+```python
+from phcl.syntax import hcl_call
+from phcl.terraform import var
+
+
+tags = hcl_call("merge", {"ManagedBy": "PHCL"}, var.extra_tags)
+name = hcl_call("coalesce", var.name, "default")
+```
+
+`hcl_call(...)` renders arguments as HCL expression values. Python containers,
+plain literals, `Expression`, and `Reference` values can be mixed in the same
+call.
+
+## References
 
 `Reference` is a structured traversal expression.
 
@@ -76,9 +132,8 @@ module.network["public"].id
 each.value.name
 ```
 
-A `Reference` still renders as native HCL syntax, but it is constructed through Python traversal operations rather than raw string injection.
-
-Example:
+A `Reference` renders as native HCL traversal syntax, but it is constructed
+through Python traversal operations rather than raw string injection.
 
 ```python
 from phcl.core import Reference
@@ -93,8 +148,6 @@ Result:
 aws_instance.web.id
 ```
 
-### Traversal
-
 Attribute access extends the path:
 
 ```python
@@ -108,143 +161,78 @@ Reference("module.network")["public"]
 Reference("module.network")[Reference("var.key")]
 ```
 
-## Relationship Between `Expression` and `Reference`
-
-`Reference` is a specialized form of `Expression`.
-
-Use `Expression` when you want to write native HCL syntax directly:
-
-```python
-hcl("a ? b : c")
-hcl("[for item in var.items : item.name]")
-```
-
-Use `Reference` when the value is a traversal path that can be built structurally:
-
-```python
-Reference("aws_instance.web").id
-Reference("module.network")["public"].id
-```
-
-`Reference` already renders as native HCL traversal syntax:
-
-Example:
-
-```python
-Reference("aws_instance.web.id")
-```
-
-Result:
+The first form renders a literal string key:
 
 ```text
-aws_instance.web.id
+module.network["public"]
 ```
 
-## Boundary
+The second form renders an expression key:
 
-PHCL intentionally keeps a clean boundary here.
+```text
+module.network[var.key]
+```
 
-- `Reference` covers structured traversal
-- raw `Expression` covers native expression syntax
+`Reference` is a specialized form of `Expression`, so it can be embedded inside
+normal PHCL values wherever an expression is expected.
 
-PHCL does not try to replace the full HCL expression language with a parallel Python operator DSL.
+In everyday code, dialect packages usually provide prepared references for
+common target-side namespaces. The Terraform dialect exposes references such as
+`var`, `local`, `module`, and `each`:
 
-## `Node._`
+```python
+from phcl.syntax import hcl_call
+from phcl.terraform import each, local, module, var
 
-`Node` provides a reference-space entrypoint through `._`.
 
-The declaration class and a reference to that declaration are not the same thing.
+image = var.app_image
+tags = hcl_call("merge", local.base_tags, var.extra_tags)
+subnet_id = module.network["public"].subnet_id
+instance_name = each.value.name
+```
 
-Given:
+These are ordinary `Reference` values with convenient starting points.
+
+## Declaration References
+
+`Node` provides `._` as the entrypoint from declaration-space into
+reference-space.
+
+The declaration class and a reference to that declaration are different things:
 
 ```python
 Instance
 ```
 
-the class itself is still the declaration.
-
-It describes an object.
-
-Given:
+refers to the PHCL declaration class.
 
 ```python
 Instance._
 ```
 
-you are no longer talking about the declaration itself.
+refers to the HCL object represented by that declaration.
 
-You are talking about the HCL object represented by that declaration.
-
-So `._` is the point where PHCL switches from declaration-space to reference-space.
-
-```python
-SomeNode._
-```
-
-The `._` mechanism belongs to the core.
-
-What it means depends on the higher-level layer using it.
-
-The core only defines:
-
-- `._` enters reference-space
-- the base path comes from the declaration type
-- further traversal uses normal Python access
-
-Example shape:
+Further traversal uses normal reference operations:
 
 ```python
 Instance._.id
+Instance._["primary"].id
 ```
 
-Practical example:
+The base path depends on the product or dialect layer. For example, a Terraform
+resource declaration can produce a base path such as:
 
-```python
-class WebInstance(Node):
-    pass
-
-
-value = WebInstance._.id
+```text
+aws_instance.web
 ```
 
-This reads as:
-
-- `WebInstance` -> declaration
-- `WebInstance._` -> reference to the represented object
-- `WebInstance._.id` -> traversal on that reference
-
-This does not hardcode Terraform or any other product into the core.
-
-A product layer decides what the base reference should be, for example:
-
-- `aws_instance.web`
-- `data.aws_ami.ubuntu`
-
-The core itself stays product-agnostic.
-- `module.network`
-- or any other product-specific address form
-
-So:
-
-- `Instance` -> declaration
-- `Instance._` -> reference to the represented object
-- `Instance._.id` -> traversal on that reference
-
-Inside block and resource attribute values, PHCL can also coerce `Node` subclasses into reference form automatically during attribute normalization.
-
-That means both of these can be valid in attribute space:
+Inside attribute values, PHCL can also coerce `Node` subclasses into reference
+form automatically as a convenience:
 
 ```python
 depends_on = [HttpsListener]
 depends_on = [HttpsListener._]
 ```
 
-The automatic form is only a convenience in attribute value space. It does not change the general meaning of `Node` as a declaration class elsewhere in PHCL.
-
-## Rule of Thumb
-
-Use plain Python values when you want plain HCL literals.
-
-Use `Reference` when you want to build a path structurally.
-
-Use `hcl(...)` when you want to inject raw HCL syntax directly.
+Both forms are valid in attribute value space. The explicit `._` form remains
+the clearest way to show that code has moved into reference-space.
