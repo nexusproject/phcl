@@ -232,6 +232,10 @@ omit the label:
 Config = derive(Locals, project="api")
 ```
 
+For practical patterns that compare `generate(...)`, `derive(...)`, and
+target-side Terraform `for_each`, see
+[Dynamic Generation Tips](./dynamic-generation-tips.md).
+
 ## `dict_block(...)`
 
 `dict_block(...)` turns an existing mapping into a generated `Block` base class.

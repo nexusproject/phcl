@@ -87,6 +87,7 @@ This installs the compatible Terraform dialect package alongside the PHCL core.
 - [Syntax](./syntax.md)
 - [Runtime](./runtime.md)
 - [Types](./types.md)
-- [Declarative Modeling, Composition and Reuse](./declarative-modeling-composition-and-reuse.md)
 - [HCL Identifiers and Python Attribute Syntax](./hcl-python-identifiers.md)
+- [Declarative Modeling, Composition and Reuse](./declarative-modeling-composition-and-reuse.md)
+- [Dynamic Generation Tips](./dynamic-generation-tips.md)
 - [CLI](./cli.md)
