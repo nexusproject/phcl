@@ -207,24 +207,29 @@ class FleetInstance(Resource["aws_instance"]):
     }
 ```
 
-Python-authored list:
+If the source data starts as a Python list, turn it into a mapping with stable
+keys before assigning it to Terraform `for_each`:
 
 ```python
 from phcl.terraform import Resource, each
 
 
-class FleetFromPython(Resource["aws_instance"]):
-    for_each = [
-        {
-            "name": "jobs-a",
-            "instance_type": "t3.micro",
-        },
-        {
-            "name": "jobs-b",
-            "instance_type": "t3.small",
-        },
-    ]
+INSTANCE_SPECS = [
+    ("a", "jobs-a", "t3.micro"),
+    ("b", "jobs-b", "t3.small"),
+]
 
+INSTANCES = {
+    key: {
+        "name": name,
+        "instance_type": instance_type,
+    }
+    for key, name, instance_type in INSTANCE_SPECS
+}
+
+
+class FleetFromPython(Resource["aws_instance"]):
+    for_each = INSTANCES
     ami = "ami-1234567890abcdef0"
     instance_type = each.value.instance_type
     tags = {
@@ -232,9 +237,8 @@ class FleetFromPython(Resource["aws_instance"]):
     }
 ```
 
-For Terraform resources, mappings are usually the practical Python-authored
-shape because they provide stable instance keys. List-shaped `for_each` values
-should be used only where the target HCL construct accepts them.
+For Terraform resources, mappings are the practical Python-authored shape
+because they provide stable instance keys.
 
 HCL-authored value:
 
