@@ -39,7 +39,16 @@ ports = (port for port in (8080, 8443))
 Embedded `Expression` and `Reference` values are preserved while surrounding
 Python containers are lowered into HCL value syntax.
 
-PHCL rejects cyclic Python container structures during normalization.
+Cyclic Python containers cannot be lowered to HCL, because HCL values are
+finite trees:
+
+```python
+value = {}
+value["self"] = value
+```
+
+PHCL detects this during normalization and reports an error instead of
+recursing forever.
 
 ## Raw HCL Expressions
 
@@ -58,12 +67,6 @@ The first value renders as:
 
 ```hcl
 name = var.enabled ? "api" : "worker"
-```
-
-not:
-
-```hcl
-name = "var.enabled ? \"api\" : \"worker\""
 ```
 
 Use `hcl(...)` for HCL syntax that should remain fully target-side: conditionals,
