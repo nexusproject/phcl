@@ -156,6 +156,47 @@ def test_derive_uses_calling_module_for_generated_class():
     assert Derived.__module__ == __name__
 
 
+def test_derive_materializes_unlabeled_declaration_with_none_label():
+    @abstract
+    class Locals(Node):
+        _phcl_kind = "locals"
+        _phcl_auto_label = False
+
+    Config = derive(Locals, None, project="api")
+
+    assert Config.__name__ == "Locals_derived"
+    assert render_block(Config()) == (
+        "locals {\n"
+        '  project = "api"\n'
+        "}"
+    )
+    assert Registry.renderables() == [Config]
+
+
+def test_derive_materializes_unlabeled_declaration_with_omitted_label():
+    @abstract
+    class Locals(Node):
+        _phcl_kind = "locals"
+        _phcl_auto_label = False
+
+    Config = derive(Locals, project="api")
+
+    assert Config.__name__ == "Locals_derived"
+    assert render_block(Config()) == (
+        "locals {\n"
+        '  project = "api"\n'
+        "}"
+    )
+
+
+def test_derive_requires_label_for_declarations_with_identity():
+    with pytest.raises(ValueError, match="label is required"):
+        derive(Block)
+
+    with pytest.raises(ValueError, match="label is required"):
+        derive(Block, None)
+
+
 def test_derive_rejects_non_block_ancestor():
     with pytest.raises(TypeError, match="Block ancestor"):
         derive(object, "public")

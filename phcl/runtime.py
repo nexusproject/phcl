@@ -131,16 +131,23 @@ def _validate_block_attribute_name(name: Any) -> str:
 
 def _derive_class(
     ancestor: type[Block],
-    label: str,
+    label: str | None,
     attrs: Mapping[str, Any],
     *,
     module_name: str,
 ) -> type[Block]:
     if not isinstance(ancestor, type) or not issubclass(ancestor, Block):
         raise TypeError("derive(...) expects a Block ancestor class")
-    if not isinstance(label, str):
-        raise TypeError("derive(...) label must be a string")
-    if not label:
+    has_identity = getattr(ancestor, "_phcl_auto_label", True)
+    if label is None:
+        if has_identity:
+            raise ValueError(
+                "derive(...) label is required for declarations with unique identity"
+            )
+        label = f"{ancestor.__name__}_derived"
+    elif not isinstance(label, str):
+        raise TypeError("derive(...) label must be a string or None")
+    elif not label:
         raise ValueError("derive(...) label cannot be empty")
 
     namespace = {"__module__": module_name}
@@ -154,7 +161,7 @@ def _derive_class(
     return type(label, (ancestor,), namespace)
 
 
-def derive(ancestor: type[Block], label: str, **attrs: Any) -> type[Block]:
+def derive(ancestor: type[Block], label: str | None = None, **attrs: Any) -> type[Block]:
     frame = inspect.currentframe()
     caller = frame.f_back if frame is not None else None
     caller_module = (
