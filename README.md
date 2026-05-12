@@ -110,7 +110,4 @@ Example output:
 
 ## Documentation
 
-- [Docs](https://github.com/nexusproject/phcl/blob/main/docs/index.md)
-- [CLI](https://github.com/nexusproject/phcl/blob/main/docs/cli.md)
-- [Runtime helpers](https://github.com/nexusproject/phcl/blob/main/docs/runtime.md)
-- [HCL identifiers and Python attribute syntax](https://github.com/nexusproject/phcl/blob/main/docs/hcl-python-identifiers.md)
+- [Documentation](https://github.com/nexusproject/phcl/tree/main/docs)
