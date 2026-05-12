@@ -195,7 +195,8 @@ Unordered collections such as sets are not accepted.
 ## `derive(...)`
 
 `derive(...)` materializes one concrete declaration class from an ancestor
-class, an explicit trailing label, and ordinary HCL body attributes.
+class, a declaration identity when the declaration kind has one, and ordinary
+HCL body attributes.
 
 Most data-driven declaration materialization should use `generate(...)`.
 Use `derive(...)` for special cases where code needs to produce a single
@@ -223,6 +224,13 @@ PublicApi = derive(
 
 This is equivalent in shape to declaring a concrete subclass with the explicit
 label `public`; keyword arguments become normal declaration attributes.
+
+For declaration kinds without a unique declaration identity, pass `None` or
+omit the label:
+
+```python
+Config = derive(Locals, project="api")
+```
 
 ## `dict_block(...)`
 
@@ -335,6 +343,10 @@ class Config(yaml_block(CONFIG, at=ENV)):
 ```
 
 Both forms treat file-backed data as a composable declaration fragment.
+
+For examples of using data-backed fragments together with ordinary block
+composition, see
+[Declarative Modeling, Composition and Reuse](./declarative-modeling-composition-and-reuse.md).
 
 ## `render_file(...)`
 

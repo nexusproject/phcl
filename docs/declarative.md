@@ -148,3 +148,6 @@ Without `Declarative`, PHCL would only be a renderer.
 - specialization through subclasses
 
 Everything above `Declarative` in PHCL depends on this behavior.
+
+For practical declaration and block composition patterns, see
+[Declarative Modeling, Composition and Reuse](./declarative-modeling-composition-and-reuse.md).

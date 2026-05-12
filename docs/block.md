@@ -30,6 +30,10 @@ PHCL's `Block` is the core structural primitive built around this shape.
 can be inherited, nested, repeated, converted, loaded from data, and eventually
 materialized into concrete declarations or declaration fragments.
 
+For practical examples of reusable block fragments, inline nested blocks, and
+data-backed block bases, see
+[Declarative Modeling, Composition and Reuse](./declarative-modeling-composition-and-reuse.md).
+
 ## HCL Block Shape
 
 A block has:

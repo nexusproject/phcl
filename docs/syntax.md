@@ -37,6 +37,10 @@ deprecated compatibility aliases and will be removed in a future release.
 This keeps the common writing surface compact without turning `phcl.core` into
 another convenience barrel.
 
+For examples of `B(...)` as an inline nested block value alongside reusable
+`Block` fragments, see
+[Declarative Modeling, Composition and Reuse](./declarative-modeling-composition-and-reuse.md).
+
 ## `hcl(...)`
 
 `hcl(...)` is the escape hatch back into native HCL syntax.

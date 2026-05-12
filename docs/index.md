@@ -82,10 +82,11 @@ This installs the compatible Terraform dialect package alongside the PHCL core.
 
 - [Declarative](./declarative.md)
 - [Block](./block.md)
-- [HCL Identifiers and Python Attribute Syntax](./hcl-python-identifiers.md)
 - [Node](./node.md)
 - [Expressions and References](./expressions.md)
 - [Syntax](./syntax.md)
 - [Runtime](./runtime.md)
 - [Types](./types.md)
+- [Declarative Modeling, Composition and Reuse](./declarative-modeling-composition-and-reuse.md)
+- [HCL Identifiers and Python Attribute Syntax](./hcl-python-identifiers.md)
 - [CLI](./cli.md)
