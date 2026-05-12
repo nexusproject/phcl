@@ -1,9 +1,23 @@
 # Block
 
-`Block` is PHCL's structural model for an HCL block body.
+`Block` is PHCL's main composition unit.
 
-`Block` is PHCL's main composition unit. It can be inherited, nested, repeated,
-converted, loaded from data, and used as a declaration body fragment.
+It can be inherited, nested, repeated, converted, loaded from data, and used as
+a declaration body fragment.
+
+`Block` is also PHCL's structural model for an HCL block body.
+
+In the HCL native syntax specification, the structural language is built from
+body content, attributes, and blocks. A simplified grammar excerpt looks like:
+
+```text
+Body      = (Attribute | Block | OneLineBlock)*
+Attribute = Identifier "=" Expression Newline
+Block     = Identifier (StringLit|Identifier)* "{" Newline Body "}" Newline
+```
+
+This is the part `Block` models: a block has a type, zero or more labels, and a
+body containing attributes and nested blocks.
 
 It builds on [`Declarative`](./declarative.md): class attributes, inherited
 attributes, properties, and instance overlays form the block body. `Block` adds
