@@ -1,153 +1,65 @@
 # Declarative
 
-`Declarative` is the base composition model in PHCL.
+`Declarative` is PHCL's abstract body collection layer.
 
-It gives the DSL one important property:
+It is not an authoring primitive for normal HCL configuration and does not
+represent an HCL block by itself. In everyday PHCL code, these rules are used
+through higher-level types such as [`Block`](./block.md), [`Node`](./node.md),
+and product-specific declaration families such as Terraform `Resource`,
+`Variable`, or `Output`.
 
-- class attributes participate in a declarative body
-- subclasses extend that body
-- subclasses can override inherited values
-- instance attributes can be merged on top as a local overlay
+## What It Provides
 
-This lets Python classes behave like reusable configuration declarations rather than ordinary stateful objects.
+`Declarative` gives PHCL a stable rule for treating Python class bodies as
+configuration bodies:
 
-Python classes are used intentionally in PHCL.
+- class attributes become declarative body attributes
+- subclasses inherit and override body attributes
+- instance attributes act as a local overlay
+- properties are evaluated against the current instance
+- methods and PHCL metadata are ignored
 
-The DSL needs:
+This is the mechanism that lets a `Block` or `Node` behave like a reusable
+declaration body instead of an ordinary stateful Python object.
 
-- inheritance
-- overriding
-- reusable structure
-- stable composition rules
+For practical inheritance and reuse patterns built on this behavior, see
+[Declarative Modeling, Composition and Reuse](./declarative-modeling-composition-and-reuse.md).
 
-Classes provide exactly that in a natural way, which makes them a good fit for declarative authoring.
+## Attribute Precedence
 
-## Inheritance and Override
+The resulting body is assembled in layers:
 
-`Declarative` has two override layers:
+1. inherited class attributes
+2. subclass attributes
+3. instance attributes
 
-- subclass over base class
-- instance over class as a local variation
+Later layers override earlier layers by name. With multiple inheritance,
+attribute precedence follows normal Python class lookup: the leftmost base wins
+over bases to the right, and the final class wins over inherited values.
 
-### Subclass Override
+PHCL does not perform implicit deep merges. If a mapping or list should be
+extended, merge it explicitly in the declaration.
 
-Given:
-
-```python
-from phcl.core import Declarative
-
-
-class Base(Declarative):
-    region = "us-east-1"
-    enabled = True
-
-
-class Child(Base):
-    size = "small"
-    enabled = False
-```
-
-The resulting declarative body is:
-
-```python
-{
-    "region": "us-east-1",
-    "enabled": False,
-    "size": "small",
-}
-```
-
-Rules:
-
-- a child declaration starts with the parent attributes
-- inherited attributes can be overridden locally in the child
-- subclasses extend an existing declaration instead of replacing it
-
-Changing the child does not mutate the parent declaration.
-
-That is what makes this style useful for reusable authoring:
-
-- define a stable base declaration once
-- derive specialized declarations from it
-- override only the parts that need to change
-
-This is the basis for abstract reusable building blocks in PHCL.
-
-### Instance Override
-
-Instance attributes are merged on top of class attributes as a local overlay.
-
-```python
-from phcl.core import Declarative
-
-
-class Config(Declarative):
-    region = "us-east-1"
-    enabled = True
-
-
-default_cfg = Config()
-
-api_cfg = Config()
-api_cfg.enabled = False
-api_cfg.name = "api"
-```
-
-Here the class still defines the shared declaration shape:
-
-```python
-{
-    "region": "us-east-1",
-    "enabled": True,
-}
-```
-
-And the instance adds a local variation on top:
-
-```python
-{
-    "region": "us-east-1",
-    "enabled": False,
-    "name": "api",
-}
-```
-
-This follows the same rule:
-
-- the class declaration stays unchanged
-- the instance provides a local variation of the resulting body
+See [Declarative Modeling, Composition and Reuse](./declarative-modeling-composition-and-reuse.md)
+for examples of explicit extension and reusable declaration fragments.
 
 ## Included and Ignored Members
 
-`Declarative` includes:
+Included:
 
-- plain attributes
+- plain class attributes
 - properties
 - nested classes
+- instance attributes
 
-Properties are evaluated against the current declaration instance.
-
-That means a property can compute derived declarative values from the local declaration context, including any instance-level overlay.
-
-`Declarative` ignores:
+Ignored:
 
 - the single `_` name used by PHCL reference accessors
-- PHCL metadata names starting with `_phcl_`
+- PHCL metadata names beginning with `_phcl_`
 - Python dunder names such as `__module__`
 - methods
 
-## Why It Exists
+Other underscore-prefixed names are preserved.
 
-Without `Declarative`, PHCL would only be a renderer.
-
-`Declarative` is what makes reuse possible through normal Python mechanisms:
-
-- inheritance
-- composition through classes
-- reusable templates
-- specialization through subclasses
-
-Everything above `Declarative` in PHCL depends on this behavior.
-
-For practical declaration and block composition patterns, see
-[Declarative Modeling, Composition and Reuse](./declarative-modeling-composition-and-reuse.md).
+For HCL attribute names that do not fit Python attribute syntax, see
+[HCL Identifiers and Python Attribute Syntax](./hcl-python-identifiers.md).
