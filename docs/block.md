@@ -1,308 +1,188 @@
 # Block
 
-`Block` is PHCL's representation of an HCL block.
+`Block` is PHCL's structural model for an HCL block body.
 
-## Structural Context
+`Block` is PHCL's main composition unit. It can be inherited, nested, repeated,
+converted, loaded from data, and used as a declaration body fragment.
 
-In the HCL native syntax specification, the structural language is built from:
+It builds on [`Declarative`](./declarative.md): class attributes, inherited
+attributes, properties, and instance overlays form the block body. `Block` adds
+the HCL block shape around that body: kind, labels, attributes, and nested
+blocks.
 
-- body content
-- attributes
-- blocks
-
-A simplified grammar excerpt looks like:
-
-```text
-Body      = (Attribute | Block | OneLineBlock)*
-Attribute = Identifier "=" Expression Newline
-Block     = Identifier (StringLit|Identifier)* "{" Newline Body "}" Newline
-```
-
-This is the important part for PHCL:
-
-- a body contains attributes and blocks
-- an attribute binds a name to an expression
-- a block has a type, zero or more labels, and a body
-
-PHCL's `Block` is the core structural primitive built around this shape.
-
-`Block` is PHCL's universal composition unit: a reusable declaration body that
-can be inherited, nested, repeated, converted, loaded from data, and eventually
-materialized into concrete declarations or declaration fragments.
-
-For practical examples of reusable block fragments, inline nested blocks, and
-data-backed block bases, see
+For practical composition patterns, see
 [Declarative Modeling, Composition and Reuse](./declarative-modeling-composition-and-reuse.md).
 
-## HCL Block Shape
+## Shape
 
-A block has:
+An HCL block has:
 
-- block type
+- a block type
 - zero or more labels
-- body
+- a body
 
-Example block:
-
-```hcl
-service "api" "v1" {
-  ...
-}
-```
-
-Here:
-
-- block type = `service`
-- labels = `"api"`, `"v1"`
-- body = `{ ... }`
-
-PHCL maps this structure into Python.
-
-More examples:
-
-No labels:
-
-```hcl
-policy {
-  ...
-}
-```
-
-One label:
-
-```hcl
-service "api" {
-  ...
-}
-```
-
-Multiple labels:
+Example:
 
 ```hcl
 service "api" "v1" {
-  ...
+  enabled = true
 }
 ```
 
-## PHCL Mapping
+At the `Block` level:
 
-At the low structural level, `Block` models the HCL block pattern directly:
+- block type comes from the surrounding position or higher-level declaration
+  type
+- labels come from `Block[...]`
+- body comes from declarative attributes
 
-- block type -> block kind
-- labels -> `Block[...]`
-- body -> declarative attributes
-
-Minimal structural example:
+Minimal PHCL shape:
 
 ```python
 from phcl.core import Block
 
 
-class MyBlock(Block):
-    attr1 = ...
-    attr2 = ...
+class Service(Block):
+    enabled = True
 ```
 
-Here:
-
-- `Block` provides the generic block shape
-- class attributes define the block body
-- labels are optional and added separately when needed
-
-`Block` is the generic structural primitive.
-
-It is also PHCL's smallest reusable declaration unit. A `Block` can describe a
-complete nested body on its own, or it can be used as a base for more specific
-fragments through ordinary Python inheritance. In that form, inheritance is not
-just code reuse: it is declarative refinement of an HCL body.
-
-In practice, it is most useful for:
-
-- nested blocks
-- repeated nested blocks
-- labelled nested blocks
+`Block` itself is product-agnostic. Terraform, Packer, Nomad, and other HCL
+layers can build product-specific declaration families on top of the same block
+shape.
 
 ## Labels
 
-`Block[...]` attaches labels to a block class.
-
-More precisely, it creates a new parameterized block class whose label tuple is fixed in the class definition.
-
-PHCL:
+`Block[...]` creates a labelled block class.
 
 ```python
-Block["network", "block"]
+Block["api"]
+Block["api", "v1"]
 ```
 
-Rendered in nested form as:
+The returned value is a new parameterized class, not an instance. This lets
+labels become part of the declaration shape.
+
+When used as a nested block value:
+
+```python
+service = Block["api"](enabled=True)
+```
+
+it renders in the shape:
 
 ```hcl
-some "network" "block" {
+service "api" {
+  enabled = true
 }
 ```
 
-Here:
+## Attributes and Local Overlays
 
-- block type comes from the attribute name in the surrounding body
-- labels come from `Block[...]`
-- `Block[...]` returns a new parameterized block class, not an instance
-
-This corresponds to the `Identifier (StringLit|Identifier)*` part of the HCL block form: a block type followed by zero or more labels.
-
-## Attributes
-
-An HCL attribute has the shape:
-
-```text
-Identifier "=" Expression
-```
-
-HCL body attribute names are identifiers, not Python identifiers. The two are
-usually the same in idiomatic Terraform-style schemas, but HCL also allows `-`
-in attribute and block type names, and Python keywords such as `from` or
-`return` are still ordinary HCL identifiers in body attribute positions.
-
-PHCL's class-first syntax uses Python class attributes, so the normal form is
-limited to names Python can write directly:
+Block bodies can be defined through class attributes:
 
 ```python
-class Config(Block):
-    region = "eu-central-1"
-```
+from phcl.core import Block
 
-Names that are valid HCL but awkward or impossible as Python attributes need an
-escape hatch. Python keyword names can be represented by a future class-first
-alias style such as `from_`; names containing `-` cannot be represented as
-Python attributes at all and are better handled through data-backed block bases
-such as `dict_block(...)`.
 
-See [HCL Identifiers and Python Attribute Syntax](./hcl-python-identifiers.md)
-for details on these edge cases.
-
-PHCL reserves the single name `_` for reference accessors and names beginning
-with `_phcl_` for its own metadata. Other underscore-prefixed HCL attribute
-names are allowed.
-
-In PHCL, plain literal attributes can be represented directly on a block instance:
-
-```python
-config = Block(port=8080, enabled=True)
-```
-
-For plain Python literals, PHCL emits the corresponding HCL literal form.
-
-Value normalization follows the Python value shape:
-
-- `Mapping` -> HCL object-like value
-- `list` -> HCL list
-- generic `Iterable` -> materialized HCL list
-- `Block(...)` -> nested block
-- `list[Block(...)]` -> repeated nested blocks
-
-Within block and resource attribute values, `Node` subclasses can also be coerced into reference-space automatically.
-
-That makes shorthand forms such as:
-
-```python
-depends_on = [HttpsListener]
-```
-
-possible in attribute space, while explicit forms such as:
-
-```python
-depends_on = [HttpsListener._]
-```
-
-remain valid.
-
-Constructor keyword arguments are not separate from the declarative model. They act as instance-level attribute definitions layered over the class-defined body.
-
-That means they can also override class-defined attributes:
-
-```python
 class Config(Block):
     port = 8080
     enabled = True
-
-
-config = Config(enabled=False)
 ```
 
-Resulting body:
+Constructor keyword arguments provide a local overlay:
+
+```python
+config = Config(enabled=False, name="api")
+```
+
+The resulting body is:
 
 ```python
 {
     "port": 8080,
     "enabled": False,
+    "name": "api",
 }
 ```
 
-So a block body can be defined in two ways:
+The overlay behavior comes from `Declarative`.
 
-- through class attributes
-- through constructor keyword arguments
-
-And constructor keyword arguments can extend or override the inherited declarative body for that local block variation.
+HCL body attribute names are not exactly the same as Python attribute names.
+For edge cases such as Python keywords or HCL identifiers containing `-`, see
+[HCL Identifiers and Python Attribute Syntax](./hcl-python-identifiers.md).
 
 ## Nested Blocks
 
-HCL nested block fragment:
-
-```hcl
-config {
-  path = "/srv/app"
-}
-```
-
-Nested HCL blocks are represented by putting `Block(...)` values inside attributes.
+Inline nested blocks can be created with `Block(...)` or the short authoring
+alias `B(...)` from [`phcl.syntax`](./syntax.md):
 
 ```python
-config = Block(path="/srv/app")
+from phcl.syntax import B
+
+
+validation = B(
+    condition=...,
+    error_message="value is invalid",
+)
 ```
 
-Reusable `Block` classes can also be used directly in nested block position.
-PHCL materializes them with no constructor arguments:
+Reusable block fragments can be defined as `Block` subclasses and used directly
+in nested block position:
 
 ```python
+from phcl.core import Block
+
+
 class HttpIngress(Block):
     from_port = 80
     to_port = 80
 
 
-ingress = [HttpIngress]
+ingress = HttpIngress
 ```
 
-Repeated nested blocks are represented by lists of blocks:
-
-```hcl
-ingress {
-  port = 80
-}
-
-ingress {
-  port = 443
-}
-```
+Repeated nested blocks are represented by lists:
 
 ```python
+class HttpsIngress(HttpIngress):
+    from_port = 443
+    to_port = 443
+
+
 ingress = [
-    Block(port=80),
-    Block(port=443),
+    HttpIngress,
+    HttpsIngress,
 ]
 ```
 
-When attached to attributes in a surrounding body, these values render as nested blocks.
+PHCL materializes `Block` subclasses in attribute space, so a class value such
+as `HttpIngress` becomes `HttpIngress()`.
 
-This corresponds to the `Body` production: a block body may contain both attributes and child blocks.
+## Value Normalization
 
-## Scope
+Inside block and declaration attributes, PHCL lowers ordinary Python values into
+HCL value space:
 
-`Block` is the generic structural primitive.
+- mappings become object-like values
+- lists and tuples become lists
+- generic iterables are materialized as lists
+- `Block` instances become nested blocks
+- `Block` classes are materialized into block instances
+- `Node` classes can be coerced into references in attribute space
 
-It is not tied to Terraform or any other HCL2-based product.
+That makes both of these forms valid:
 
-Product-specific layers can build on top of it, but the block shape itself belongs to the PHCL core.
+```python
+depends_on = [HttpsListener]
+depends_on = [HttpsListener._]
+```
 
-If you want to understand top-level declarations, continue with:
+The first form is a convenience. The explicit `._` form makes reference-space
+visible in the source. See [Expressions and References](./expressions.md) for
+the full reference model.
 
-- [Node](./node.md)
+## From Block to Node
+
+`Block` describes nested structural content. Top-level renderable declarations
+are built with [`Node`](./node.md) and product-specific declaration families
+that inherit from it.

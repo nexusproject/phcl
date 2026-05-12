@@ -1,37 +1,32 @@
 # Node
 
-`Node` is PHCL's top-level declaration type.
+`Node` is PHCL's base layer for top-level declarations.
 
-`Block` models generic HCL structure. `Node` adds PHCL-specific top-level behavior.
+It extends [`Block`](./block.md) with registry participation, logical naming,
+and reference-space access. Product or dialect packages usually build concrete
+declaration families on top of it, such as Terraform `Resource`, `Data`,
+`Variable`, `Output`, `Provider`, `Locals`, or `Module`.
 
-In core PHCL, `Node` is primarily a declaration base.
+Most PHCL projects use those product-specific families directly. `Node` is the
+core mechanism behind them.
 
-It is usually not the final user-facing abstraction in a product layer.
-
-Product-specific packages typically build more concrete root node types on top of it, such as resource-like, provider-like, or output-like declarations.
-
-So the main role of `Node` is:
-
-- provide top-level generation behavior in the core
-- act as the base class from which product-specific root nodes are built
-
-## What `Node` Adds
+## What Node Adds
 
 Compared to `Block`, `Node` adds:
 
-- top-level declaration semantics
-- registry participation
-- logical naming
-- automatic default kind for direct subclasses
+- top-level declaration behavior
+- automatic registry participation
+- class-name based logical names
+- default block kind for direct `Node` subclasses
 - reference entrypoint through `._`
 
-## Top-Level Declaration
+`Node` still uses the same declarative body model as `Block`: class attributes,
+inheritance, nested blocks, and local overlays all work the same way.
 
-`Node` is the core top-level declaration primitive.
+## Declaration Families
 
-At this level, the important part is not a particular product-specific block type, but the top-level generation behavior that higher-level declaration types inherit.
-
-Typical usage is to define a product-specific root node type on top of `Node`:
+Direct subclasses of `Node` are treated as declaration families, not concrete
+project declarations.
 
 ```python
 from phcl.core import Node
@@ -39,76 +34,70 @@ from phcl.core import Node
 
 class Resource(Node):
     pass
+```
 
+`Resource` becomes a root declaration family. It is not registered for output
+by itself.
 
-class MainResource(Resource):
+Concrete declarations start one level deeper:
+
+```python
+class Web(Resource):
     image = "nginx"
 ```
 
-Here:
-
-- `Node` provides the core top-level declaration behavior
-- `Resource` becomes a product-specific root node base
-- `MainResource` is a concrete declaration built on top of that base
-
-`abstract` is not required in this specific pattern because `Node` itself and its direct subclasses are not registered as renderable project declarations.
-Concrete project declarations begin one level deeper.
-
-With the core defaults shown above, this renders as:
+With core defaults, this renders as:
 
 ```hcl
-resource "main_resource" {
+resource "web" {
   image = "nginx"
 }
 ```
 
-In real product layers, classes such as `Resource` usually define more semantics than this, but the inheritance pattern is the important part.
+Product dialects usually add more semantics to their declaration families, but
+the registration pattern is the same: direct `Node` children define families;
+their descendants are project declarations.
 
-Rules:
+## Kind and Labels
 
-- direct subclasses of `Node` derive their block kind from the class name by default
-- the final top-level label is also derived from the class name
+When a class directly extends `Node`, PHCL derives its default block kind from
+the class name:
 
-This uses PHCL's normal class-to-label conversion.
+```python
+class Resource(Node):
+    pass
+```
 
-Example:
+uses:
+
+```text
+resource
+```
+
+Concrete declaration labels are also derived from class names:
+
+```python
+class WebAPI(Resource):
+    pass
+```
+
+uses:
+
+```text
+web_api
+```
+
+The conversion is PHCL's normal class-to-label conversion:
 
 - `Resource` -> `resource`
-- `MainResource` -> `main_resource`
 - `WebAPI` -> `web_api`
 - `InstanceId` -> `instance_id`
 
-So:
+Set `_phcl_kind` when a declaration family needs a kind that does not match the
+class name.
 
-- the block kind for a direct `Node` subclass defaults from the class name
-- concrete subclasses inherit that kind unless a higher-level layer changes it
-- the generated top-level logical label defaults from the concrete class name
-- `_phcl_kind` can still be set explicitly when a root declaration type needs to force a different kind
-
-For product or dialect root classes, this means:
-
-- if the desired block kind already matches the canonical class name, it is fine to rely on the default
-- explicit `_phcl_kind` is only needed when the desired kind differs from that default
-
-Example:
-
-- `class Resource(Node)` can rely on the default kind `resource`
-- `class Data(Node)` can rely on the default kind `data`
-- `class Provider(Node)` can rely on the default kind `provider`
-
-## Relationship to `Block`
-
-`Node` still uses the same body model as `Block`.
-
-That means a node can contain:
-
-- plain attributes
-- nested `Block(...)` values
-- repeated nested blocks
-
-It also inherits label support from `Block`, so product-specific root node types can use `[...]` as well.
-
-Example:
+`Node` also inherits `Block[...]` label support. Product-specific declaration
+families can use labels to represent target-side block labels:
 
 ```python
 from phcl.core import Block, Node
@@ -122,7 +111,7 @@ class MainService(Resource["web"]):
     config = Block(path="/srv/app")
 ```
 
-This renders as:
+renders as:
 
 ```hcl
 resource "web" "main_service" {
@@ -134,73 +123,76 @@ resource "web" "main_service" {
 
 Here:
 
-- `resource` comes from the direct `Node` subclass `Resource`
+- `resource` comes from the declaration family
 - `"web"` comes from `Resource["web"]`
-- `"main_service"` comes from the concrete class name `MainService`
+- `"main_service"` comes from the concrete class name
 
-## Underscore Helper Classes
-
-`class _(...)` is also a valid PHCL authoring pattern for local helper declarations:
-
-```python
-from phcl.core import Node
-
-
-class Provider(Node["aws"]):
-    _phcl_kind = "provider"
-    _phcl_auto_label = False
-
-
-class _(Provider):
-    region = "us-east-1"
-```
-
-This can be useful when:
-
-- the declaration only matters locally inside the module
-- you do not want to keep a stable exported class name in the module namespace
-- you still want full class-body syntax instead of switching to a different helper API
-
-This is only an authoring convenience.
-
-It does not replace dialect-level rendering policy.
-
-If a declaration family should not derive labels from concrete class names, that should still be expressed structurally through mechanisms such as `_phcl_auto_label = False`.
+Declaration families that should not add the class-name label can set
+`_phcl_auto_label = False`. Terraform `Provider`, `Locals`, and `Terraform`
+use this shape.
 
 ## Registry
 
-Project declaration classes are registered automatically.
+Project declaration classes are registered automatically when they are defined.
 
-`Node` itself and direct subclasses of `Node` are treated as root declaration types rather than concrete project declarations, so registration begins one level deeper.
+`Node` itself and direct subclasses of `Node` are not renderable declarations.
+Descendants below the declaration family level are collected by the registry.
 
-This is what lets PHCL compile a file without a separate main entrypoint:
+This is why a PHCL source file does not need a separate main entrypoint:
 
-1. load the source module for the file
-2. collect declaration classes through the registry
-3. render the concrete subset
+1. the source module is loaded
+2. concrete `Node` descendants are collected
+3. the registry is rendered into top-level HCL output
 
-## Abstract Nodes
+For CLI compilation behavior, see [CLI](./cli.md).
 
-Base declarations that should not be emitted can be marked abstract:
+## Abstract Declarations
+
+Reusable declaration bases that should not be rendered can be marked
+`abstract`:
 
 ```python
-from phcl.core import Node
 from phcl.syntax import abstract
+from phcl.terraform import Resource
 
 
 @abstract
-class BaseService(Node):
-    pass
+class ManagedBucket(Resource["aws_s3_bucket"]):
+    force_destroy = True
 ```
 
-Abstract classes are skipped by renderable selection, while concrete subclasses can still become output declarations.
+Abstract declarations are skipped by renderable selection, while concrete
+subclasses can still be emitted.
+
+For practical reuse patterns, see
+[Declarative Modeling, Composition and Reuse](./declarative-modeling-composition-and-reuse.md).
 
 ## References
 
-`Node` also provides the `._` entrypoint for reference-space.
+`Node` provides `._` as the entrypoint from declaration-space into
+reference-space.
 
-The mechanism itself belongs to the core. The concrete base path is defined by higher-level product layers.
+The base reference path is defined by the concrete product or dialect layer.
+For example, Terraform resources use paths such as:
 
-`._` remains the explicit reference form.
+```text
+aws_instance.web
+```
 
-Inside block and resource attribute values, PHCL may also coerce `Node` subclasses into reference form automatically during attribute normalization as a convenience.
+Further traversal uses normal `Reference` behavior:
+
+```python
+WebInstance._.id
+WebInstance._["primary"].arn
+```
+
+Inside attribute values, PHCL may also coerce `Node` subclasses into reference
+form automatically:
+
+```python
+depends_on = [HttpsListener]
+depends_on = [HttpsListener._]
+```
+
+For the full expression and reference model, see
+[Expressions and References](./expressions.md).
