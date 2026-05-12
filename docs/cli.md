@@ -145,8 +145,8 @@ Deprecation warnings are shown with file and line number:
 
 ```text
 ==> build src
-  warn src/backend_role.py:13 (`jsonencode(...)` is deprecated and will be removed in a future release; use `hcl_jsonencode(...)` instead.)
-  write src/backend_role.py -> envs/dev/backend_role.tf
+  warn src/policy.py:18 (`jsonencode(...)` is deprecated and will be removed in a future release; use `hcl_jsonencode(...)` instead.)
+  write src/policy.py -> envs/dev/policy.tf
 
 ==> done in 0.03s
   1 written, 0 skipped, 0 failed, 1 warnings

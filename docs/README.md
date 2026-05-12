@@ -13,16 +13,16 @@ directly: RBAC rules, users, roles, regions, environments, inventories, service
 definitions, or other source-of-truth records. It also fits incremental
 adoption in existing HCL projects because the output remains plain HCL.
 
-## Reading Path
+## Contents
 
-Start with the core model:
+Core model:
 
 - [Overview](./index.md)
 - [Declarative](./declarative.md)
 - [Block](./block.md)
 - [Node](./node.md)
 
-Then move through the authoring surface:
+Authoring surface:
 
 - [Expressions and References](./expressions.md)
 - [Syntax](./syntax.md)
@@ -30,11 +30,11 @@ Then move through the authoring surface:
 - [Types](./types.md)
 - [HCL Identifiers and Python Attribute Syntax](./hcl-python-identifiers.md)
 
-For practical authoring patterns:
+Practical guides:
 
 - [Declarative Modeling, Composition and Reuse](./declarative-modeling-composition-and-reuse.md)
 - [Dynamic Generation Tips](./dynamic-generation-tips.md)
 
-For building projects:
+Project builds:
 
 - [CLI](./cli.md)
