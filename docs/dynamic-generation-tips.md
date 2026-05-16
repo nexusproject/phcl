@@ -71,6 +71,42 @@ Use mapping input when declaration identity matters. Mapping keys become stable
 identity suffixes. List input is positional, so inserting or reordering items
 can rename generated declarations.
 
+## Inheritance and Generation
+
+Use inheritance before `@generate(...)` when generated declarations share a
+common body.
+
+```python
+from phcl.syntax import abstract
+from phcl.runtime import generate, this
+from phcl.terraform import Resource
+
+
+@abstract
+class ManagedBucket(Resource["aws_s3_bucket"]):
+    force_destroy = True
+    tags = {"ManagedBy": "PHCL"}
+
+
+@generate(BUCKETS)
+class Bucket(ManagedBucket):
+    bucket = this.value["bucket"]
+    tags = ManagedBucket.tags | {"Name": this.key}
+```
+
+The generated template itself should be the last step in the declaration
+chain. Subclassing it afterwards is rejected because the class has template
+semantics rather than ordinary declaration-base semantics.
+
+When a one-off declaration should share the same base, inherit from the base
+directly:
+
+```python
+class AuditBucket(ManagedBucket):
+    bucket = "audit"
+    tags = ManagedBucket.tags | {"Name": "audit"}
+```
+
 ## Any Declaration Family
 
 `generate(...)` is not limited to Terraform resources. It materializes PHCL

@@ -181,6 +181,34 @@ Apply `@generate(...)` only once per declaration class. Use `derive(...)` when
 custom generation code needs to build declarations across multiple dimensions
 or naming rules.
 
+Inheritance should happen before `@generate(...)` is applied. A generated
+template is a final materialization template, so subclassing it afterwards is
+rejected.
+
+Use an abstract or reusable base declaration when generated and non-generated
+declarations should share the same body:
+
+```python
+from phcl.syntax import abstract
+from phcl.runtime import generate, this
+from phcl.terraform import Resource
+
+
+@abstract
+class ManagedBucket(Resource["aws_s3_bucket"]):
+    force_destroy = True
+    tags = {"ManagedBy": "PHCL"}
+
+
+@generate(BUCKETS)
+class Bucket(ManagedBucket):
+    bucket = this.value["bucket"]
+
+
+class AuditBucket(ManagedBucket):
+    bucket = "audit"
+```
+
 Mapping keys must be non-empty strings matching `[A-Za-z][A-Za-z0-9_]*`.
 Use a mapping when declaration identity matters. Lists are positional, so
 inserting or reordering items can rename materialized declarations.
