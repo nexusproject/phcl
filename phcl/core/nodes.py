@@ -180,6 +180,18 @@ class Node(Block):
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
 
+        generated_bases = [
+            base
+            for base in cls.__bases__
+            if getattr(base, "_phcl_generated_template", False)
+        ]
+        if generated_bases and not cls.__dict__.get("_phcl_generated_materialization", False):
+            base = generated_bases[0]
+            raise TypeError(
+                f"cannot subclass generated template {base.__name__}; "
+                "inherit from a base declaration before applying generate(...)"
+            )
+
         if cls is not Node and Node in cls.__bases__ and "_phcl_kind" not in cls.__dict__:
             cls._phcl_kind = class_to_label(cls.__name__)
 

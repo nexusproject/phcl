@@ -135,6 +135,7 @@ def _derive_class(
     attrs: Mapping[str, Any],
     *,
     module_name: str,
+    generated_materialization: bool = False,
 ) -> type[Block]:
     if not isinstance(ancestor, type) or not issubclass(ancestor, Block):
         raise TypeError("derive(...) expects a Block ancestor class")
@@ -151,6 +152,8 @@ def _derive_class(
         raise ValueError("derive(...) label cannot be empty")
 
     namespace = {"__module__": module_name}
+    if generated_materialization:
+        namespace["_phcl_generated_materialization"] = True
     for key, value in attrs.items():
         try:
             key = _validate_block_attribute_name(key)
@@ -309,6 +312,7 @@ def generate(data: Mapping[str, Any] | list[Any]):
                 generated_name,
                 attrs,
                 module_name=cls.__module__,
+                generated_materialization=True,
             )
             cls._phcl_generation_classes[item.key] = generated_cls
 

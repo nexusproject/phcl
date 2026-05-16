@@ -446,6 +446,27 @@ def test_generated_template_rejects_missing_reference_keys():
         Bucket._["missing"]
 
 
+def test_generated_template_rejects_subclassing():
+    @abstract
+    class Resource(Node["aws_s3_bucket"]):
+        _phcl_kind = "resource"
+
+    @generate({"logs": {}})
+    class Bucket(Resource):
+        pass
+
+    with pytest.raises(
+        TypeError,
+        match=(
+            "cannot subclass generated template Bucket; inherit from a base "
+            r"declaration before applying generate\(\.\.\.\)"
+        ),
+    ):
+
+        class SpecialBucket(Bucket):
+            pass
+
+
 def test_this_outside_generate_raises_clear_error():
     class Service(Block):
         name = this.key
