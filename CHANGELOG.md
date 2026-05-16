@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.5.2
+
+- Allowed `derive(...)` to materialize declaration kinds without unique identity, such as `Locals`, without passing a label
+- Rejected subclassing generated templates so declaration inheritance stays before `generate(...)` materialization
+- Removed the legacy core `generate` decorator; use `phcl.runtime.generate(...)` for declaration materialization
+- Expanded documentation for composition, expression authoring, dynamic generation, and CLI usage
+
 ## v0.5.1
 
 - Added `generate(...)` and `this` for mapping-driven declaration materialization with stable label suffixes
