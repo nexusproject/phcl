@@ -6,7 +6,7 @@ from phcl.core.expression import hcl
 from phcl.core.nodes import Node
 from phcl.core.registry import Registry
 from phcl.render.hcl2 import render_block
-from phcl.runtime import block_dict, derive, dict_block, generate, json_block, this, yaml_block
+from phcl.runtime import block_dict, derive, dict_block, generate, json_block, this, when, yaml_block
 
 
 @pytest.fixture(autouse=True)
@@ -329,6 +329,108 @@ def test_generate_sets_label_to_none_without_auto_label():
         '  name = "api"\n'
         "}"
     )
+
+
+def test_when_false_excludes_declaration_from_renderables():
+    @abstract
+    class Resource(Node["example"]):
+        _phcl_kind = "resource"
+
+    @when(False)
+    class Disabled(Resource):
+        name = "disabled"
+
+    class Enabled(Resource):
+        name = "enabled"
+
+    assert Registry.renderables() == [Enabled]
+    assert Disabled.__dict__["_phcl_enabled"] is False
+
+
+def test_when_true_keeps_declaration_renderable():
+    @abstract
+    class Resource(Node["example"]):
+        _phcl_kind = "resource"
+
+    @when(True)
+    class Enabled(Resource):
+        name = "enabled"
+
+    assert Registry.renderables() == [Enabled]
+    assert Enabled.__dict__["_phcl_enabled"] is True
+
+
+def test_when_rejects_non_block_classes():
+    with pytest.raises(TypeError, match="Block classes"):
+        when(True)(object)
+
+
+def test_when_before_generate_disables_materialized_declarations():
+    @abstract
+    class Resource(Node["example"]):
+        _phcl_kind = "resource"
+
+    @generate({"dev": {"name": "api"}})
+    @when(False)
+    class Service(Resource):
+        name = this.value["name"]
+
+    assert Registry.renderables() == []
+    assert Service.__dict__["_phcl_enabled"] is False
+    [ServiceDev] = Service.__dict__["_phcl_generation_classes"].values()
+    assert ServiceDev.__dict__["_phcl_enabled"] is False
+
+
+def test_when_after_generate_disables_materialized_declarations():
+    @abstract
+    class Resource(Node["example"]):
+        _phcl_kind = "resource"
+
+    @when(False)
+    @generate({"dev": {"name": "api"}})
+    class Service(Resource):
+        name = this.value["name"]
+
+    assert Registry.renderables() == []
+    assert Service.__dict__["_phcl_enabled"] is False
+    [ServiceDev] = Service.__dict__["_phcl_generation_classes"].values()
+    assert ServiceDev.__dict__["_phcl_enabled"] is False
+
+
+def test_when_on_base_does_not_disable_concrete_subclass():
+    @abstract
+    class Resource(Node["example"]):
+        _phcl_kind = "resource"
+
+    @when(False)
+    @abstract
+    class DisabledBase(Resource):
+        name = "base"
+
+    class Service(DisabledBase):
+        name = "service"
+
+    assert Registry.renderables() == [Service]
+
+
+def test_when_on_base_does_not_disable_generated_subclass():
+    @abstract
+    class Resource(Node["example"]):
+        _phcl_kind = "resource"
+
+    @when(False)
+    @abstract
+    class DisabledBase(Resource):
+        pass
+
+    @generate({"dev": {"name": "api"}})
+    class Service(DisabledBase):
+        name = this.value["name"]
+
+    [ServiceDev] = Registry.renderables()
+
+    assert ServiceDev.__dict__["_phcl_enabled"] is True
+    assert ServiceDev()._phcl_attributes["name"] == "api"
 
 
 def test_generate_rejects_unsupported_iterables():
