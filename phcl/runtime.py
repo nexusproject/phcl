@@ -176,6 +176,23 @@ def derive(ancestor: type[Block], label: str | None = None, **attrs: Any) -> typ
     return _derive_class(ancestor, label, attrs, module_name=caller_module)
 
 
+def when(condition: Any):
+    enabled = bool(condition)
+
+    def decorator(cls: type[Block]) -> type[Block]:
+        if not isinstance(cls, type) or not issubclass(cls, Block):
+            raise TypeError("when(...) can only decorate Block classes")
+
+        cls._phcl_enabled = enabled
+
+        for generated_cls in getattr(cls, "_phcl_generation_classes", {}).values():
+            generated_cls._phcl_enabled = enabled
+
+        return cls
+
+    return decorator
+
+
 class _GenerationItem:
     def __init__(self, *, index: int, key: str, value: Any, label: str | None = None):
         self.index = index
@@ -314,6 +331,7 @@ def generate(data: Mapping[str, Any] | list[Any]):
                 module_name=cls.__module__,
                 generated_materialization=True,
             )
+            generated_cls._phcl_enabled = cls.__dict__.get("_phcl_enabled", True)
             cls._phcl_generation_classes[item.key] = generated_cls
 
         return cls

@@ -23,6 +23,7 @@ class Registry:
             node_cls
             for node_cls in cls._phcl_registry
             if not node_cls.__dict__.get("_phcl_abstract", False)
+            and node_cls.__dict__.get("_phcl_enabled", True)
         ]
 
         if module_name is not None:

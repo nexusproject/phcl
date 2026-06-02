@@ -13,6 +13,7 @@ import warnings
 from .core import Block as B
 from .core.decorators import abstract
 from .core.expression import Expression, _HCLValue, hcl, hcl_call
+from .runtime import when
 
 
 def hcl_jsonencode(value: _HCLValue) -> Expression:
@@ -57,6 +58,7 @@ def file(path: str | Expression) -> Expression:
 __all__ = [
     "B",
     "abstract",
+    "when",
     "hcl",
     "hcl_call",
     "hcl_file",
