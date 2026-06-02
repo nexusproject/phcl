@@ -1,8 +1,10 @@
 from phcl.core.decorators import abstract
-from phcl.runtime import generate, this
+from phcl.runtime import generate, this, when
 from phcl.terraform import Output, Resource
 from phcl.terraform import TerraformPHCL as PHCL  # noqa: N812
 
+
+ENABLE_REPLICA_BUCKETS = False
 
 BUCKETS = {
     "logs": {
@@ -12,6 +14,17 @@ BUCKETS = {
     "assets": {
         "bucket": "phcl-example-assets",
         "purpose": "assets",
+    },
+}
+
+REPLICA_BUCKETS = {
+    "eu": {
+        "bucket": "phcl-example-logs-eu",
+        "purpose": "replica",
+    },
+    "us": {
+        "bucket": "phcl-example-logs-us",
+        "purpose": "replica",
     },
 }
 
@@ -29,6 +42,17 @@ class Bucket(ManagedBucket):
         "Label": this.label,
         "Purpose": this.value["purpose"],
         "Order": this.index,
+        "ManagedBy": "PHCL",
+    }
+
+
+@when(ENABLE_REPLICA_BUCKETS)
+@generate(REPLICA_BUCKETS)
+class ReplicaBucket(ManagedBucket):
+    bucket = this.value["bucket"]
+    tags = {
+        "Name": this.key,
+        "Purpose": this.value["purpose"],
         "ManagedBy": "PHCL",
     }
 

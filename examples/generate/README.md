@@ -4,8 +4,8 @@ These examples cover declaration materialization with `generate(...)`.
 
 Working examples live in `valid/`:
 
-- `mapping.py` shows mapping-driven materialization and references through
-  `Bucket._["key"]`.
+- `mapping.py` shows mapping-driven materialization, references through
+  `Bucket._["key"]`, and `when(...)` for conditional generated declarations.
 - `list.py` shows positional list materialization.
 - `terraform_for_each.py` shows PHCL-side `generate(...)` combined with
   Terraform-side `for_each`.
