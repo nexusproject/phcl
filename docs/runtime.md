@@ -19,6 +19,7 @@ from phcl.runtime import (
     path_target,
     render_file,
     this,
+    when,
     yaml_block,
     derive,
 )
@@ -31,6 +32,7 @@ from phcl.runtime import (
 - `path_module()`
 - `path_target()`
 - `heredoc(...)`
+- `when(...)`
 - `generate(...)`
 - `this`
 - `derive(...)`
@@ -105,6 +107,49 @@ script = heredoc("echo hello\necho world")
 
 This is useful when content already exists on the Python side but should be
 emitted as an HCL heredoc instead of a quoted string.
+
+## `when(...)`
+
+`when(...)` enables or disables a declaration at PHCL generation time.
+
+Use it when a declaration should materialize only for a Python-side condition,
+while keeping the declaration body itself class-first and HCL-shaped.
+
+Example:
+
+```python
+from phcl.runtime import when
+from phcl.terraform import Resource
+
+
+ENABLE_LOGS = True
+
+
+@when(ENABLE_LOGS)
+class Logs(Resource["aws_s3_bucket"]):
+    bucket = "app-logs"
+```
+
+When the condition is false, the declaration is kept in the registry but is not
+selected for rendering. This is different from `abstract`, which marks a class
+as a reusable base declaration that should never render directly.
+
+`when(...)` can be combined with `generate(...)` in either decorator order. In
+both cases, the enabled/disabled state applies to the generated declarations:
+
+```python
+@generate(BUCKETS)
+@when(ENABLE_BUCKETS)
+class Bucket(Resource["aws_s3_bucket"]):
+    bucket = this.value["bucket"]
+```
+
+```python
+@when(ENABLE_BUCKETS)
+@generate(BUCKETS)
+class Bucket(Resource["aws_s3_bucket"]):
+    bucket = this.value["bucket"]
+```
 
 ## `generate(...)` and `this`
 
