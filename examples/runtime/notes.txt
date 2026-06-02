@@ -1,0 +1,1 @@
+This file is loaded at Terraform runtime via file("${path.module}/notes.txt").

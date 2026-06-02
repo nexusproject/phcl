@@ -1,0 +1,9 @@
+dev:
+  vpc_id: vpc-0123456789abcdef0
+  security_group_name: web-dev
+  component: web
+  network:
+    public:
+      subnet:
+        cidr_block: 10.0.1.0/24
+        availability_zone: us-east-1a
