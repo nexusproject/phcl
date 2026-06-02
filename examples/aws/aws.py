@@ -23,7 +23,7 @@ class InstanceNames(Variable):
 
 
 class Aws(Provider["aws"]):
-    region = Region._
+    region = Region
 
 
 class AmazonLinux(Data["aws_ami"]):
@@ -40,7 +40,7 @@ class AmazonLinux(Data["aws_ami"]):
 class WebSecurityGroup(Resource["aws_security_group"]):
     name = "web"
     description = "Web access"
-    vpc_id = VpcId._
+    vpc_id = VpcId
 
     ingress = [
         B(

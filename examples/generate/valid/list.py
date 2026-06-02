@@ -22,7 +22,7 @@ class VpcId(Variable):
 
 @generate(SUBNETS)
 class Subnet(Resource["aws_subnet"]):
-    vpc_id = VpcId._
+    vpc_id = VpcId
     cidr_block = this.value["cidr"]
     availability_zone = this.value["az"]
     tags = {

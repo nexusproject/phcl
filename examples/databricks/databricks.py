@@ -19,12 +19,12 @@ class TeamName(Variable):
 
 
 class Databricks(Provider["databricks"]):
-    host = DatabricksHost._
-    token = DatabricksToken._
+    host = DatabricksHost
+    token = DatabricksToken
 
 
 class WorkspaceGroup(Data["databricks_group"]):
-    display_name = TeamName._
+    display_name = TeamName
 
 
 class WorkspaceClusterPolicy(Resource["databricks_cluster_policy"]):
