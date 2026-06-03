@@ -6,10 +6,11 @@
        align="right">
 </h1>
 
-PHCL is a Python-based Infrastructure as Code (IaC) tool for dynamic infrastructure workflows.
-
-It provides an authoring and generation layer for HCL-based tools such as
+PHCL provides an authoring and generation layer for HCL-based tools such as
 Terraform, OpenTofu, and Packer.
+
+**It does not require you to write or rewrite the whole project in PHCL.<br>
+You can keep your existing Terraform/OpenTofu codebase and use PHCL only for a single `.tf` file that needs to be parameterized or generated from external data.**
 
 Declarations are written as Python classes. The source stays close to the shape
 of HCL while adding composition, dynamic generation, and integration with
