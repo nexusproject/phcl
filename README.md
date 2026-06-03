@@ -12,7 +12,13 @@ Terraform, OpenTofu, and Packer.
 **It does not require you to write or rewrite the whole project in PHCL.<br>
 You can keep your existing Terraform/OpenTofu codebase and use PHCL only for a single `.tf` file that needs to be parameterized or generated from external data.**
 
-Declarations are written as Python classes. The source stays close to the shape
+PHCL code is not an application framework or runtime model. There is no entry point.
+
+PHCL `.py` files are rendered directly and independently into the corresponding `.tf` files, so they can be mixed with regular HCL files inside the same project:
+
+`src/network.py` → `src/network.tf`
+
+HCL declarations are written as Python classes. The source stays close to the shape
 of HCL while adding composition, dynamic generation, and integration with
 Python data and logic.
 
