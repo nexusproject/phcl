@@ -19,7 +19,6 @@ from string import Template
 from typing import Any, Optional, Union
 
 from .core import Block
-from .core.nodes import class_to_label
 from .core.expression import Expression, hcl
 
 
@@ -129,23 +128,23 @@ def _validate_block_attribute_name(name: Any) -> str:
     return name
 
 
-def _validate_label_part(part: Any) -> str:
-    if not isinstance(part, str):
-        raise TypeError(f"label(...) parts must be strings; got {part!r}")
-    if not part:
-        raise ValueError("label(...) parts cannot be empty")
-    if not _GENERATION_KEY_RE.match(part):
-        raise ValueError(
-            f"label(...) part {part!r} must match [A-Za-z][A-Za-z0-9_]*"
-        )
-    return part
-
-
 def label(*parts: str):
     if not parts:
         raise ValueError("label(...) requires at least one part")
 
-    logical_name = "_".join(_validate_label_part(part) for part in parts)
+    label_parts = []
+    for part in parts:
+        if not isinstance(part, str):
+            raise TypeError(f"label(...) parts must be strings; got {part!r}")
+        if not part:
+            raise ValueError("label(...) parts cannot be empty")
+        if not _GENERATION_KEY_RE.match(part):
+            raise ValueError(
+                f"label(...) part {part!r} must match [A-Za-z][A-Za-z0-9_]*"
+            )
+        label_parts.append(part)
+
+    logical_name = "_".join(label_parts)
 
     def decorator(cls: type[Block]) -> type[Block]:
         if not isinstance(cls, type) or not issubclass(cls, Block):
@@ -157,16 +156,10 @@ def label(*parts: str):
     return decorator
 
 
-def _derive_class(
-    ancestor: type[Block],
-    label: str | None,
-    attrs: Mapping[str, Any],
-    *,
-    module_name: str,
-    generated_materialization: bool = False,
-) -> type[Block]:
+def derive(ancestor: type[Block], label: str | None = None, **attrs: Any) -> type[Block]:
     if not isinstance(ancestor, type) or not issubclass(ancestor, Block):
         raise TypeError("derive(...) expects a Block ancestor class")
+
     has_identity = getattr(ancestor, "_phcl_auto_label", True)
     if label is None:
         if has_identity:
@@ -179,9 +172,14 @@ def _derive_class(
     elif not label:
         raise ValueError("derive(...) label cannot be empty")
 
-    namespace = {"__module__": module_name}
-    if generated_materialization:
-        namespace["_phcl_generated_materialization"] = True
+    frame = inspect.currentframe()
+    caller = frame.f_back if frame is not None else None
+    caller_module = (
+        caller.f_globals.get("__name__", ancestor.__module__)
+        if caller is not None
+        else ancestor.__module__
+    )
+    namespace = {"__module__": caller_module}
     for key, value in attrs.items():
         try:
             key = _validate_block_attribute_name(key)
@@ -190,18 +188,6 @@ def _derive_class(
         namespace[key] = value
 
     return type(label, (ancestor,), namespace)
-
-
-def derive(ancestor: type[Block], label: str | None = None, **attrs: Any) -> type[Block]:
-    frame = inspect.currentframe()
-    caller = frame.f_back if frame is not None else None
-    caller_module = (
-        caller.f_globals.get("__name__", ancestor.__module__)
-        if caller is not None
-        else ancestor.__module__
-    )
-
-    return _derive_class(ancestor, label, attrs, module_name=caller_module)
 
 
 def when(condition: Any):
@@ -221,14 +207,6 @@ def when(condition: Any):
     return decorator
 
 
-class _GenerationItem:
-    def __init__(self, *, index: int, key: str, value: Any, label: str | None = None):
-        self.index = index
-        self.key = key
-        self.value = value
-        self.label = label
-
-
 class _ThisExpr:
     def __init__(self, root: str, path: tuple[tuple[str, Any], ...] = ()):
         self._root = root
@@ -242,7 +220,7 @@ class _ThisExpr:
     def __getitem__(self, key: Any):
         return _ThisExpr(self._root, self._path + (("item", key),))
 
-    def _phcl_resolve(self, item: _GenerationItem):
+    def _phcl_resolve(self, item):
         value = getattr(item, self._root)
         for op, arg in self._path:
             if op == "attr":
@@ -291,39 +269,24 @@ def _validate_generation_key(key: Any) -> str:
     return key
 
 
-def _resolve_this(value: Any, item: _GenerationItem) -> Any:
-    if isinstance(value, _ThisExpr):
-        return value._phcl_resolve(item)
-    if isinstance(value, list):
-        return [_resolve_this(item_value, item) for item_value in value]
-    if isinstance(value, tuple):
-        return tuple(_resolve_this(item_value, item) for item_value in value)
-    if isinstance(value, Mapping):
-        return {
-            key: _resolve_this(item_value, item)
-            for key, item_value in value.items()
-        }
-    return value
-
-
-def _generation_items(data: Mapping[str, Any] | list[Any]) -> list[_GenerationItem]:
+def _generation_keys(data: Mapping[str, Any] | list[Any]) -> list[str]:
     if isinstance(data, Mapping):
         return [
-            _GenerationItem(index=index, key=_validate_generation_key(key), value=value)
-            for index, (key, value) in enumerate(data.items())
+            _validate_generation_key(key)
+            for key in data
         ]
 
     if isinstance(data, list):
         return [
-            _GenerationItem(index=index, key=str(index), value=value)
-            for index, value in enumerate(data)
+            str(index)
+            for index, _ in enumerate(data)
         ]
 
     raise TypeError("generate(...) expects a mapping or list")
 
 
 def generate(data: Mapping[str, Any] | list[Any]):
-    items = _generation_items(data)
+    keys = _generation_keys(data)
 
     def decorator(cls: type[Block]) -> type[Block]:
         if not isinstance(cls, type) or not issubclass(cls, Block):
@@ -336,31 +299,16 @@ def generate(data: Mapping[str, Any] | list[Any]):
 
         cls._phcl_abstract = True
         cls._phcl_generated_template = True
+        cls._phcl_generation_source = data
         cls._phcl_generation_classes = {}
-        for item in items:
-            generated_name = f"{cls.__name__}_{item.key}"
-            item.label = (
-                class_to_label(generated_name)
-                if getattr(cls, "_phcl_auto_label", True)
-                else None
-            )
-            attrs = {}
-            for name, value in cls.__dict__.items():
-                if name == "_" or name.startswith("_phcl_") or (
-                    name.startswith("__") and name.endswith("__")
-                ):
-                    continue
-                attrs[name] = _resolve_this(value, item)
+        for key in keys:
+            class _(cls):
+                __module__ = cls.__module__
+                _phcl_generated_materialization = True
+                _phcl_generation_key = key
+                _phcl_enabled = cls.__dict__.get("_phcl_enabled", True)
 
-            generated_cls = _derive_class(
-                cls,
-                generated_name,
-                attrs,
-                module_name=cls.__module__,
-                generated_materialization=True,
-            )
-            generated_cls._phcl_enabled = cls.__dict__.get("_phcl_enabled", True)
-            cls._phcl_generation_classes[item.key] = generated_cls
+            cls._phcl_generation_classes[key] = _
 
         return cls
 

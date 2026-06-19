@@ -8,6 +8,20 @@ from .registry import Registry
 from .values import normalize_value
 
 
+class _GenerationContext:
+    def __init__(self, *, generated_cls, index, key, value):
+        self.generated_cls = generated_cls
+        self.index = index
+        self.key = key
+        self.value = value
+
+    @property
+    def label(self):
+        if not getattr(self.generated_cls, "_phcl_auto_label", True):
+            return None
+        return self.generated_cls._phcl_logical_name()
+
+
 class _ClassProperty:
     def __init__(self, fget):
         self.fget = fget
@@ -106,6 +120,68 @@ class Block(Declarative):
                 raise ValueError("Attributes starting with '_phcl_' are reserved")
         self.__dict__.update(kwargs)
 
+    @property
+    def _phcl_attributes(self):
+        attrs = super()._phcl_attributes
+        item = self.__class__._phcl_generation_item()
+        if item is None:
+            return attrs
+        return {
+            name: self._phcl_resolve_generation_value(value, item)
+            for name, value in attrs.items()
+        }
+
+    @classmethod
+    def _phcl_generation_item(cls):
+        key = cls.__dict__.get("_phcl_generation_key")
+        if key is None:
+            return None
+
+        for base in cls.__mro__[1:]:
+            if "_phcl_generation_source" not in base.__dict__:
+                continue
+
+            source = base.__dict__["_phcl_generation_source"]
+            if isinstance(source, Mapping):
+                for index, item_key in enumerate(source):
+                    if item_key == key:
+                        return _GenerationContext(
+                            generated_cls=cls,
+                            index=index,
+                            key=key,
+                            value=source[key],
+                        )
+            elif isinstance(source, list):
+                index = int(key)
+                return _GenerationContext(
+                    generated_cls=cls,
+                    index=index,
+                    key=key,
+                    value=source[index],
+                )
+
+        return None
+
+    @classmethod
+    def _phcl_resolve_generation_value(cls, value, item):
+        resolve = getattr(value, "_phcl_resolve", None)
+        if resolve is not None:
+            return resolve(item)
+
+        if isinstance(value, list):
+            return [cls._phcl_resolve_generation_value(x, item) for x in value]
+
+        if isinstance(value, tuple):
+            return tuple(cls._phcl_resolve_generation_value(x, item) for x in value)
+
+        if isinstance(value, Mapping):
+            return {
+                key: cls._phcl_resolve_generation_value(x, item)
+                for key, x in value.items()
+            }
+
+        return value
+
     def _phcl_normalize_value(self, value):
         def coerce(item):
             if isinstance(item, type) and issubclass(item, Node):
@@ -178,6 +254,13 @@ class Node(Block):
         override = cls.__dict__.get("_phcl_label_override")
         if override is not None:
             return override
+
+        key = cls.__dict__.get("_phcl_generation_key")
+        if key is not None:
+            for base in cls.__mro__[1:]:
+                if "_phcl_generation_source" in base.__dict__:
+                    return f"{base._phcl_logical_name()}_{key}"
+
         return class_to_label(cls.__name__)
 
     @_ClassProperty

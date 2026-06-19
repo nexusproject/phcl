@@ -252,8 +252,10 @@ def test_generate_materializes_declarations_from_mapping_with_key_suffix():
     BucketDev, BucketProd = Registry.renderables()
 
     assert Bucket.__dict__["_phcl_abstract"] is True
-    assert BucketDev.__name__ == "Bucket_dev"
-    assert BucketProd.__name__ == "Bucket_prod"
+    assert BucketDev.__name__ == "_"
+    assert BucketProd.__name__ == "_"
+    assert BucketDev._phcl_logical_name() == "bucket_dev"
+    assert BucketProd._phcl_logical_name() == "bucket_prod"
     assert render_block(BucketDev()) == (
         'resource "aws_s3_bucket" "bucket_dev" {\n'
         '  bucket = "app-dev"\n'
@@ -272,6 +274,54 @@ def test_generate_materializes_declarations_from_mapping_with_key_suffix():
         '    Index = 1\n'
         '    Label = "bucket_prod"\n'
         '  }\n'
+        "}"
+    )
+
+
+def test_generate_materializes_empty_subclasses_that_inherit_template_attrs():
+    @abstract
+    class Resource(Node["example"]):
+        _phcl_kind = "resource"
+
+    @generate({"dev": {"name": "api"}})
+    class Service(Resource):
+        name = this.value["name"]
+
+    [ServiceDev] = Registry.renderables()
+
+    assert "name" not in ServiceDev.__dict__
+    assert render_block(ServiceDev()) == (
+        'resource "example" "service_dev" {\n'
+        '  name = "api"\n'
+        "}"
+    )
+
+
+def test_generate_uses_template_label_override_in_either_decorator_order():
+    @abstract
+    class Resource(Node["example"]):
+        _phcl_kind = "resource"
+
+    @label("api")
+    @generate({"dev": {}})
+    class Service(Resource):
+        generated_label = this.label
+
+    @generate({"dev": {}})
+    @label("worker")
+    class Worker(Resource):
+        generated_label = this.label
+
+    ServiceDev, WorkerDev = Registry.renderables()
+
+    assert render_block(ServiceDev()) == (
+        'resource "example" "api_dev" {\n'
+        '  generated_label = "api_dev"\n'
+        "}"
+    )
+    assert render_block(WorkerDev()) == (
+        'resource "example" "worker_dev" {\n'
+        '  generated_label = "worker_dev"\n'
         "}"
     )
 
@@ -310,8 +360,10 @@ def test_generate_materializes_declarations_from_list_with_positional_keys():
 
     Service0, Service1 = Registry.renderables()
 
-    assert Service0.__name__ == "Service_0"
-    assert Service1.__name__ == "Service_1"
+    assert Service0.__name__ == "_"
+    assert Service1.__name__ == "_"
+    assert Service0._phcl_logical_name() == "service_0"
+    assert Service1._phcl_logical_name() == "service_1"
     assert Service0()._phcl_attributes == {
         "name": "api",
         "generation_key": "0",
