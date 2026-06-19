@@ -269,9 +269,9 @@ to `generate(...)`.
 in a normal declaration is an error because there is no current generation
 item to resolve.
 
-Apply `@generate(...)` only once per declaration class. Use `derive(...)` when
-custom generation code needs to build declarations across multiple dimensions
-or naming rules.
+Apply `@generate(...)` only once per declaration class. For custom generation
+across multiple dimensions or naming rules, prefer ordinary Python loops with
+`label(...)` and local class declarations.
 
 Inheritance should happen before `@generate(...)` is applied. A generated
 template is a final materialization template, so subclassing it afterwards is
@@ -314,13 +314,14 @@ Unordered collections such as sets are not accepted.
 
 ## `derive(...)`
 
+`derive(...)` is a legacy low-level helper. It remains available for existing
+code, but new generation code should prefer normal Python class declarations
+with `label(...)`, or `generate(...)` for simple one-dimensional cases.
+`derive(...)` is planned for deprecation after `1.0.0`.
+
 `derive(...)` materializes one concrete declaration class from an ancestor
 class, a declaration identity when the declaration kind has one, and ordinary
 HCL body attributes.
-
-Most data-driven declaration materialization should use `generate(...)`.
-Use `derive(...)` for special cases where code needs to produce a single
-declaration functionally while still staying inside PHCL's class-first model.
 
 Example:
 
@@ -352,8 +353,7 @@ omit the label:
 Config = derive(Locals, project="api")
 ```
 
-For practical patterns that compare `generate(...)`, `derive(...)`, and
-target-side Terraform `for_each`, see
+For practical generation patterns, see
 [Dynamic Generation Tips](./dynamic-generation-tips.md).
 
 ## `dict_block(...)`

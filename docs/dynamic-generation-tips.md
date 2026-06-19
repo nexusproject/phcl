@@ -2,7 +2,8 @@
 
 PHCL has two different generation layers:
 
-- PHCL-side declaration materialization with `generate(...)` and `derive(...)`.
+- PHCL-side declaration materialization with normal Python class declarations
+  or `generate(...)`.
 - Target-side iteration in generated HCL, such as Terraform `for_each` and
   `each`.
 
@@ -12,10 +13,47 @@ expand its instances during its own evaluation.
 
 These layers can be used separately or together.
 
-## `generate(...)`
+## Generation with Plain Python
 
-`generate(...)` materializes multiple concrete declarations from one
-class-first template.
+The most direct PHCL generation style is ordinary Python: use `for`, `if`,
+`label(...)`, and a local class declaration.
+It is explicit, easy to debug, and keeps generation behavior in normal Python
+control flow.
+
+```python
+from phcl.runtime import label
+from phcl.terraform import Resource
+
+
+for env in ["dev", "prod"]:
+    for family in ["logs", "assets"]:
+        for tier in ["a", "b"]:
+
+            @label("bucket", env, family, tier)
+            class Bucket(Resource["aws_s3_bucket"]):
+                bucket = f"app-{env}-{family}-{tier}"
+                tags = {
+                    "Env": env,
+                    "Family": family,
+                    "Tier": tier,
+                }
+```
+
+This creates declarations such as `bucket_prod_logs_a` and
+`bucket_prod_logs_b`. The repeated local class name `Bucket` is only a Python
+handle inside the loop; the rendered PHCL identity comes from `label(...)`.
+
+This style is the main escape hatch for real generation logic:
+
+- use normal `if` statements for conditions
+- use nested `for` loops for multi-dimensional declaration graphs
+- use normal inheritance when declarations share a body
+
+## `generate(...)` Helper
+
+`generate(...)` is convenient sugar for simple one-dimensional generation from
+a mapping or list. Use it when the template form is more compact than writing
+the loop directly.
 
 ```python
 from phcl.runtime import generate, this
@@ -52,6 +90,10 @@ class BucketIds(Output):
     }
 ```
 
+For keys such as `"logs"` and `"assets"`, this renders identities such as
+`bucket_logs` and `bucket_assets`, using the class-derived label plus the
+generation key.
+
 The decorated class is a template. It is not rendered directly. PHCL creates
 concrete generated declarations before rendering. Those declarations are
 anonymous subclasses of the template: their Python class name is an
@@ -73,27 +115,10 @@ Use mapping input when declaration identity matters. Mapping keys become stable
 identity suffixes. List input is positional, so inserting or reordering items
 can rename generated declarations.
 
-## Explicit Labels
+Prefer the Pythonic style when generation needs nested loops, custom
+conditions, cross-products, or naming rules that do not fit one mapping.
 
-Use `label(...)` when the rendered declaration identity should not come
-directly from the Python class name.
-
-```python
-from phcl.runtime import generate, label, this
-from phcl.terraform import Resource
-
-
-@label("app", "bucket")
-@generate(BUCKETS)
-class Bucket(Resource["aws_s3_bucket"]):
-    bucket = this.value["bucket"]
-```
-
-For generation key `"logs"`, this renders the declaration identity
-`app_bucket_logs`. The label override belongs to the template, and generated
-declarations append their own generation key.
-
-## Inheritance and Generation
+## Inheritance and `generate(...)`
 
 Use inheritance before `@generate(...)` when generated declarations share a
 common body.
@@ -376,44 +401,3 @@ class PrimaryLogBucketId(Output):
 - refers to the current target-side instance
 
 Both can appear in the same declaration when both layers are being used.
-
-## `derive(...)`
-
-Most data-driven declaration materialization should use `generate(...)`.
-
-Use `derive(...)` when code needs full control over the generation flow: custom
-loops, cross-products, conditional materialization, or naming rules that do not
-fit one `generate(...)` mapping.
-
-```python
-from itertools import product
-
-from phcl.syntax import abstract
-from phcl.runtime import derive
-from phcl.terraform import Resource
-
-
-@abstract
-class RegionalBucket(Resource["aws_s3_bucket"]):
-    force_destroy = True
-
-
-ENVS = ["dev", "prod"]
-REGIONS = ["us_east_1", "eu_central_1"]
-
-
-for env, region in product(ENVS, REGIONS):
-    derive(
-        RegionalBucket,
-        f"{env}_{region}",
-        bucket=f"app-{env}-{region}",
-        tags={
-            "Env": env,
-            "Region": region,
-        },
-    )
-```
-
-`derive(...)` creates one concrete declaration class from an ancestor. It is a
-lower-level materialization helper, not the common path for everyday repeated
-declarations.

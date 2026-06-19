@@ -33,6 +33,7 @@ Authoring surface:
 Practical guides:
 
 - [Declarative Modeling, Composition and Reuse](./declarative-modeling-composition-and-reuse.md)
+- [Conditional Authoring Tips](./conditional-authoring-tips.md)
 - [Dynamic Generation Tips](./dynamic-generation-tips.md)
 
 Project builds:
