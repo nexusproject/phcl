@@ -314,10 +314,9 @@ Unordered collections such as sets are not accepted.
 
 ## `derive(...)`
 
-`derive(...)` is a legacy low-level helper. It remains available for existing
-code, but new generation code should prefer normal Python class declarations
-with `label(...)`, or `generate(...)` for simple one-dimensional cases.
-`derive(...)` is planned for deprecation after `1.0.0`.
+`derive(...)` is a legacy low-level helper kept for compatibility. New
+generation code should prefer normal Python class declarations, or
+`generate(...)` for simple one-dimensional cases.
 
 `derive(...)` materializes one concrete declaration class from an ancestor
 class, a declaration identity when the declaration kind has one, and ordinary
