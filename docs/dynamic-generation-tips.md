@@ -43,12 +43,6 @@ This creates declarations such as `bucket_prod_logs_a` and
 `bucket_prod_logs_b`. The repeated local class name `Bucket` is only a Python
 handle inside the loop; the rendered PHCL identity comes from `label(...)`.
 
-This style is the main escape hatch for real generation logic:
-
-- use normal `if` statements for conditions
-- use nested `for` loops for multi-dimensional declaration graphs
-- use normal inheritance when declarations share a body
-
 ## `generate(...)` Helper
 
 `generate(...)` is convenient sugar for simple one-dimensional generation from
