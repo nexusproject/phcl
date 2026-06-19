@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "phcl"
-version = "0.5.2"
-description = "Python-powered structural DSL for authoring native HCL2 configuration."
+version = "0.5.3"
+description = "Python-based Infrastructure as Code (IaC) tool for dynamic infrastructure workflows."
 authors = [
     {name = "Dmitry Sergeev",email = "realnexusway@gmail.com"}
 ]

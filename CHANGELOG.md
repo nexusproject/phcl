@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.5.3
+
+- Added `label(...)` for overriding generated declaration logical labels
+- Refactored `generate(...)` to materialize declarations through template inheritance
+- Prepared node reference selectors for future typed reference/autocomplete support
+- Added `when(...)` for conditionally enabling declarations at PHCL generation time
+
 ## v0.5.2
 
 - Allowed `derive(...)` to materialize declaration kinds without unique identity, such as `Locals`, without passing a label
