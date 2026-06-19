@@ -8,7 +8,7 @@ This backend is intentionally small and purpose-built:
 """
 
 from phcl.core.expression import Expression, Reference
-from phcl.core.nodes import Block, Node, class_to_label
+from phcl.core.nodes import Block, Node
 
 
 def walk_block(block: Block):
@@ -113,7 +113,8 @@ def render_block(block: Block, *, kind=None, level: int = 0, indent: str = "  ")
 
     labels = list(getattr(block.__class__, "_phcl_label", []) or [])
     if isinstance(block, Node) and getattr(block.__class__, "_phcl_auto_label", True):
-        labels = labels + [class_to_label(block.__class__.__name__)]
+        # Node logical names render as the final/trailing HCL block label.
+        labels = labels + [block.__class__._phcl_logical_name()]
     header = " ".join([block_type] + [quote_string(label) for label in labels]) + " {"
 
     attrs, nested = walk_block(block)

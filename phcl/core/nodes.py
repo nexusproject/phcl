@@ -169,6 +169,12 @@ class Node(Block):
 
     @classmethod
     def _phcl_logical_name(cls) -> str:
+        """
+        Return the declaration identity used as the final HCL block label.
+
+        Structural labels such as Resource["aws_s3_bucket"] live in
+        `_phcl_label`; this method only computes the trailing logical label.
+        """
         return class_to_label(cls.__name__)
 
     @_ClassProperty

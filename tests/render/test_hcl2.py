@@ -109,6 +109,26 @@ def test_render_block_can_disable_automatic_class_name_label_for_a_node_family()
     )
 
 
+def test_render_block_uses_node_logical_name_for_automatic_label():
+    class ResourceLike(Node["example"]):
+        _phcl_kind = "resource"
+
+    class Bucket(ResourceLike):
+        name = "app"
+
+        @classmethod
+        def _phcl_logical_name(cls):
+            return "logs"
+
+    rendered = render_block(Bucket())
+
+    assert rendered == (
+        'resource "example" "logs" {\n'
+        '  name = "app"\n'
+        "}"
+    )
+
+
 def test_render_block_can_use_underscore_named_local_helper_class():
     class ProviderLike(Node["aws"]):
         _phcl_kind = "provider"
