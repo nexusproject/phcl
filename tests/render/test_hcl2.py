@@ -3,6 +3,7 @@ import pytest
 from phcl.core.expression import Reference, hcl
 from phcl.core.nodes import Block, Node
 from phcl.render.hcl2 import build_hcl, quote_string, render_block, render_value, walk_block
+from phcl.runtime import label
 
 
 def test_quote_string_escapes_quotes_and_backslashes():
@@ -127,6 +128,38 @@ def test_render_block_uses_node_logical_name_for_automatic_label():
         '  name = "app"\n'
         "}"
     )
+
+
+def test_render_block_uses_label_decorator_for_node_logical_name():
+    class ResourceLike(Node["example"]):
+        _phcl_kind = "resource"
+
+    @label("dev", "logs")
+    class Bucket(ResourceLike):
+        name = "app"
+
+    rendered = render_block(Bucket())
+
+    assert rendered == (
+        'resource "example" "dev_logs" {\n'
+        '  name = "app"\n'
+        "}"
+    )
+
+
+def test_label_decorator_is_local_to_the_decorated_class():
+    class ResourceLike(Node["example"]):
+        _phcl_kind = "resource"
+
+    @label("base")
+    class Base(ResourceLike):
+        pass
+
+    class Child(Base):
+        pass
+
+    assert render_block(Base()) == 'resource "example" "base" {\n}'
+    assert render_block(Child()) == 'resource "example" "child" {\n}'
 
 
 def test_render_block_can_use_underscore_named_local_helper_class():

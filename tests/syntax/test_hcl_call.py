@@ -36,5 +36,6 @@ def test_syntax_all_exposes_new_hcl_function_surface_only():
     assert "hcl_file" in syntax.__all__
     assert "hcl_format" in syntax.__all__
     assert "hcl_jsonencode" in syntax.__all__
+    assert "label" in syntax.__all__
     assert "file" not in syntax.__all__
     assert "jsonencode" not in syntax.__all__

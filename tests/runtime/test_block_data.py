@@ -6,7 +6,7 @@ from phcl.core.expression import hcl
 from phcl.core.nodes import Node
 from phcl.core.registry import Registry
 from phcl.render.hcl2 import render_block
-from phcl.runtime import block_dict, derive, dict_block, generate, json_block, this, when, yaml_block
+from phcl.runtime import block_dict, derive, dict_block, generate, json_block, label, this, when, yaml_block
 
 
 @pytest.fixture(autouse=True)
@@ -125,6 +125,26 @@ def test_dict_block_rejects_single_underscore_key():
 def test_block_dict_rejects_non_block_values():
     with pytest.raises(TypeError, match="Block"):
         block_dict({"name": "api"})
+
+
+def test_label_rejects_missing_parts():
+    with pytest.raises(ValueError, match="requires at least one"):
+        label()
+
+
+def test_label_rejects_non_string_parts():
+    with pytest.raises(TypeError, match="parts must be strings"):
+        label("dev", 1)  # type: ignore[arg-type]
+
+
+def test_label_rejects_invalid_parts():
+    with pytest.raises(ValueError, match=r"must match \[A-Za-z\]"):
+        label("dev-blue")
+
+
+def test_label_rejects_non_block_classes():
+    with pytest.raises(TypeError, match="Block classes"):
+        label("service")(object)
 
 
 def test_derive_materializes_declaration_from_ancestor_and_explicit_label():

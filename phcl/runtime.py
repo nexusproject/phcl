@@ -129,6 +129,34 @@ def _validate_block_attribute_name(name: Any) -> str:
     return name
 
 
+def _validate_label_part(part: Any) -> str:
+    if not isinstance(part, str):
+        raise TypeError(f"label(...) parts must be strings; got {part!r}")
+    if not part:
+        raise ValueError("label(...) parts cannot be empty")
+    if not _GENERATION_KEY_RE.match(part):
+        raise ValueError(
+            f"label(...) part {part!r} must match [A-Za-z][A-Za-z0-9_]*"
+        )
+    return part
+
+
+def label(*parts: str):
+    if not parts:
+        raise ValueError("label(...) requires at least one part")
+
+    logical_name = "_".join(_validate_label_part(part) for part in parts)
+
+    def decorator(cls: type[Block]) -> type[Block]:
+        if not isinstance(cls, type) or not issubclass(cls, Block):
+            raise TypeError("label(...) can only decorate Block classes")
+
+        cls._phcl_label_override = logical_name
+        return cls
+
+    return decorator
+
+
 def _derive_class(
     ancestor: type[Block],
     label: str | None,
@@ -500,6 +528,7 @@ __all__ = [
     "path_target",
     "heredoc",
     "multiline",
+    "label",
     "derive",
     "generate",
     "this",

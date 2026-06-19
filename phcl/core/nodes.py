@@ -175,6 +175,9 @@ class Node(Block):
         Structural labels such as Resource["aws_s3_bucket"] live in
         `_phcl_label`; this method only computes the trailing logical label.
         """
+        override = cls.__dict__.get("_phcl_label_override")
+        if override is not None:
+            return override
         return class_to_label(cls.__name__)
 
     @_ClassProperty
