@@ -9,7 +9,7 @@
 PHCL provides an authoring and generation layer for HCL-based tools such as
 Terraform, OpenTofu, and Packer.
 
-**It does not require you to write or rewrite the whole project in PHCL.<br>
+**PHCL does not assume a full project rewrite.<br>
 You can keep your existing Terraform/OpenTofu codebase and use PHCL only for a single `.tf` file that needs to be parameterized or generated from external data.**
 
 PHCL code is not an application framework or runtime model. There is no entry point.
