@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from collections.abc import Mapping
 from typing import Optional, Tuple
 import re
@@ -20,39 +22,6 @@ class _GenerationContext:
         if not getattr(self.generated_cls, "_phcl_auto_label", True):
             return None
         return self.generated_cls._phcl_logical_name()
-
-
-class _ClassProperty:
-    def __init__(self, fget):
-        self.fget = fget
-
-    def __get__(self, instance, owner=None):
-        if owner is None:
-            owner = type(instance)
-        return self.fget(owner)
-
-
-class _GeneratedTemplateReference:
-    def __init__(self, cls):
-        self.cls = cls
-
-    def __getitem__(self, key: str):
-        classes = self.cls.__dict__.get("_phcl_generation_classes", {})
-        try:
-            generated_cls = classes[key]
-        except KeyError as exc:
-            raise KeyError(
-                f"{self.cls.__name__} has no generated declaration for key {key!r}"
-            ) from exc
-        return Reference(generated_cls._phcl_reference_base())
-
-    def __getattr__(self, name: str):
-        if name.startswith("_"):
-            raise AttributeError(name)
-        raise TypeError(
-            f"{self.cls.__name__} is a generated template; select a generated "
-            f"declaration with {self.cls.__name__}._[\"key\"]"
-        )
 
 
 def class_to_label(name: str) -> str:
@@ -229,6 +198,42 @@ class Block(Declarative):
         }
 
 
+class _GeneratedTemplateReference:
+    def __init__(self, cls: type[Node]):
+        self.cls = cls
+
+    def __getitem__(self, key: str) -> Reference:
+        classes = self.cls.__dict__.get("_phcl_generation_classes", {})
+        try:
+            generated_cls = classes[key]
+        except KeyError as exc:
+            raise KeyError(
+                f"{self.cls.__name__} has no generated declaration for key {key!r}"
+            ) from exc
+        return Reference(generated_cls._phcl_reference_base())
+
+    def __getattr__(self, name: str):
+        if name.startswith("_"):
+            raise AttributeError(name)
+        raise TypeError(
+            f"{self.cls.__name__} is a generated template; select a generated "
+            f"declaration with {self.cls.__name__}._[\"key\"]"
+        )
+
+
+class _NodeReferenceDescriptor:
+    def __get__(
+        self,
+        instance: Optional[Node],
+        owner: Optional[type[Node]] = None,
+    ) -> Reference | _GeneratedTemplateReference:
+        if owner is None:
+            owner = type(instance)
+        if owner.__dict__.get("_phcl_generated_template", False):
+            return _GeneratedTemplateReference(owner)
+        return Reference(owner._phcl_reference_base())
+
+
 class Node(Block):
     """
     Base class for top-level renderable declarations.
@@ -263,11 +268,7 @@ class Node(Block):
 
         return class_to_label(cls.__name__)
 
-    @_ClassProperty
-    def _(cls):
-        if cls.__dict__.get("_phcl_generated_template", False):
-            return _GeneratedTemplateReference(cls)
-        return Reference(cls._phcl_reference_base())
+    _ = _NodeReferenceDescriptor()
 
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
