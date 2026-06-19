@@ -4,6 +4,8 @@
   PHCL
   <img src="https://codecov.io/gh/nexusproject/phcl/branch/main/graph/badge.svg"
        align="right">
+  <img src="https://static.pepy.tech/personalized-badge/phcl?period=total&units=INTERNATIONAL_SYSTEM&left_color=GRAY&right_color=GREEN&left_text=downloads"
+       align="right">
 </h1>
 
 PHCL provides an authoring and generation layer for HCL-based tools such as
