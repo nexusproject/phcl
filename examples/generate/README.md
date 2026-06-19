@@ -7,6 +7,8 @@ Working examples live in `valid/`:
 - `mapping.py` shows mapping-driven materialization, references through
   `Bucket._["key"]`, and `when(...)` for conditional generated declarations.
 - `list.py` shows positional list materialization.
+- `label_when.py` shows `label(...)` on regular and generated declarations
+  together with `when(...)` for conditional declarations.
 - `terraform_for_each.py` shows PHCL-side `generate(...)` combined with
   Terraform-side `for_each`.
 
