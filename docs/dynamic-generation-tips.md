@@ -53,8 +53,10 @@ class BucketIds(Output):
 ```
 
 The decorated class is a template. It is not rendered directly. PHCL creates
-concrete declaration classes such as `Bucket_logs` and `Bucket_assets` before
-rendering.
+concrete generated declarations before rendering. Those declarations are
+anonymous subclasses of the template: their Python class name is an
+implementation detail, while their PHCL identity is the template logical label
+plus the generation key.
 
 Inside the template:
 
@@ -70,6 +72,26 @@ docs for the full helper contract and validation rules.
 Use mapping input when declaration identity matters. Mapping keys become stable
 identity suffixes. List input is positional, so inserting or reordering items
 can rename generated declarations.
+
+## Explicit Labels
+
+Use `label(...)` when the rendered declaration identity should not come
+directly from the Python class name.
+
+```python
+from phcl.runtime import generate, label, this
+from phcl.terraform import Resource
+
+
+@label("app", "bucket")
+@generate(BUCKETS)
+class Bucket(Resource["aws_s3_bucket"]):
+    bucket = this.value["bucket"]
+```
+
+For generation key `"logs"`, this renders the declaration identity
+`app_bucket_logs`. The label override belongs to the template, and generated
+declarations append their own generation key.
 
 ## Inheritance and Generation
 
@@ -97,6 +119,10 @@ class Bucket(ManagedBucket):
 The generated template itself should be the last step in the declaration
 chain. Subclassing it afterwards is rejected because the class has template
 semantics rather than ordinary declaration-base semantics.
+
+Generated declarations inherit the template body. Updating the template body in
+source changes what the generated declarations inherit, just like changing a
+normal base class changes its subclasses.
 
 When a one-off declaration should share the same base, inherit from the base
 directly:

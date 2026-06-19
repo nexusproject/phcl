@@ -15,6 +15,7 @@ from phcl.runtime import (
     generate,
     heredoc,
     json_block,
+    label,
     path_module,
     path_target,
     render_file,
@@ -33,6 +34,7 @@ from phcl.runtime import (
 - `path_target()`
 - `heredoc(...)`
 - `when(...)`
+- `label(...)`
 - `generate(...)`
 - `this`
 - `derive(...)`
@@ -151,6 +153,48 @@ class Bucket(Resource["aws_s3_bucket"]):
     bucket = this.value["bucket"]
 ```
 
+## `label(...)`
+
+`label(...)` overrides the logical declaration label that PHCL would normally
+derive from the Python class name.
+
+Use it when a declaration should keep a Python-friendly class name while
+rendering with an explicit HCL identity:
+
+```python
+from phcl.runtime import label
+from phcl.terraform import Resource
+
+
+@label("logs")
+class LogsBucket(Resource["aws_s3_bucket"]):
+    bucket = "app-logs"
+```
+
+This renders as `resource "aws_s3_bucket" "logs"`.
+
+For compound names, pass multiple parts. They are joined with `_`:
+
+```python
+@label("app", "logs")
+class LogsBucket(Resource["aws_s3_bucket"]):
+    bucket = "app-logs"
+```
+
+This renders as `resource "aws_s3_bucket" "app_logs"`.
+
+With `generate(...)`, the generation key is appended to the label override:
+
+```python
+@label("app", "bucket")
+@generate(BUCKETS)
+class Bucket(Resource["aws_s3_bucket"]):
+    bucket = this.value["bucket"]
+```
+
+For a key such as `"logs"`, the generated declaration identity is
+`app_bucket_logs`.
+
 ## `generate(...)` and `this`
 
 `generate(...)` materializes multiple concrete declarations from one
@@ -185,7 +229,10 @@ generation key is appended with `_`.
 
 The decorated class becomes a generation template and is not rendered directly.
 Concrete declaration classes are materialized as soon as Python applies the
-decorator, so the renderer still receives ordinary declaration classes.
+decorator, so the renderer still receives ordinary declaration classes. These
+generated declarations are anonymous subclasses of the template. They inherit
+the template body in the normal Python way, and `this.*` selectors are resolved
+for each generated subclass when PHCL reads its attributes.
 
 ```python
 class BucketArn(Output):
