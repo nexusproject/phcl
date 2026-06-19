@@ -46,11 +46,14 @@ contract. Future version ranges are provisional and may change.
 
 Focus:
 
-- Strengthen `generate(...)`
-- Generated context model
-- `.derive(...)`
-- Class-first materialization flows
-- Scoped multi-file generation from one PHCL source
+- Class-first declaration materialization
+- Plain Python generation with explicit logical labels
+- `label(...)` for overriding declaration identity
+- `generate(...)` as a helper for simple template-based generation
+- Generated template references such as `Template._["key"]`
+- `when(...)` for Python-side conditional rendering
+- Typed reference/autocomplete groundwork
+- Keep `derive(...)` as a legacy compatibility helper
 
 ### Later Directions
 
