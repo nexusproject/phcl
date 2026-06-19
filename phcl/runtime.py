@@ -32,10 +32,14 @@ _GENERATION_KEY_RE = re.compile(r"^[A-Za-z][A-Za-z0-9_]*$")
 _MAX_ERROR_REPR = 80
 
 
+# Build CLI sets this while loading PHCL modules so runtime helpers can resolve
+# target-relative paths without threading the target through every API.
 def _set_build_target(path: Path) -> Token[Optional[Path]]:
     return _BUILD_TARGET.set(path.resolve())
 
 
+# ContextVar.set returns a token so nested/failed builds can restore the prior
+# target exactly in a finally block.
 def _reset_build_target(token: Token[Optional[Path]]) -> None:
     _BUILD_TARGET.reset(token)
 
