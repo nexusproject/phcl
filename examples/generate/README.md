@@ -11,6 +11,8 @@ Working examples live in `valid/`:
   together with `when(...)` for conditional declarations.
 - `terraform_for_each.py` shows PHCL-side `generate(...)` combined with
   Terraform-side `for_each`.
+- `plain_python_for_each.py` shows plain Python generation combined with
+  Terraform-side `for_each`.
 
 Build them with:
 
