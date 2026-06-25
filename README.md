@@ -22,7 +22,9 @@ PHCL `.py` files are rendered directly and independently into the corresponding 
 
 HCL declarations are written as Python classes. The source stays close to the shape
 of HCL while adding composition, dynamic generation, and integration with
-Python data and logic. See: [Declarative modeling, composition and reuse](docs/declarative-modeling-composition-and-reuse.md)
+Python data and logic.
+
+See: [Declarative modeling, composition and reuse](docs/declarative-modeling-composition-and-reuse.md)
 
 ## Example
 
