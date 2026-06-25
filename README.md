@@ -22,7 +22,7 @@ PHCL `.py` files are rendered directly and independently into the corresponding 
 
 HCL declarations are written as Python classes. The source stays close to the shape
 of HCL while adding composition, dynamic generation, and integration with
-Python data and logic.
+Python data and logic. See: [Declarative modeling, composition and reuse](docs/declarative-modeling-composition-and-reuse.md)
 
 ## Example
 
@@ -73,24 +73,18 @@ BUCKETS = {
     "assets": {"bucket": "app-assets"},
 }
 
-
 @generate(BUCKETS)
 class Bucket(Resource["aws_s3_bucket"]):
     bucket = this.value["bucket"]
     tags = {"Name": this.key}
 ```
+Learn more: [Dynamic generation tips](docs/dynamic-generation-tips.md)
 
 PHCL also fits incremental adoption in existing HCL projects: generate one
 file, one subtree, or one environment at a time, while the output remains plain
 HCL that can live next to hand-written configuration.
 
 ## CLI
-
-Install PHCL:
-
-```bash
-pip install phcl
-```
 
 Install PHCL with the Terraform dialect:
 
